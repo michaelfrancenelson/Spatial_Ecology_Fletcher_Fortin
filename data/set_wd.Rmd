@@ -1,0 +1,18 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r setup, include=FALSE, error = TRUE}
+knitr::opts_chunk$set(root.dir = rprojroot::find_rstudio_root_file(), error = TRUE)
+knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = rprojroot::find_rstudio_root_file())
+```
+
+```{r settings}
+source("data/environment_vars.R")
+getwd()
+dir.exists("data")
+```
+```{r}
+getwd()
+```
+

@@ -1,0 +1,183 @@
+---
+title: "Fletcher & Fortin - Chapter 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+if (!("raster" %in% installed.packages()[, 1])) install.packages("raster")
+require(raster)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(root.dir = rprojroot::find_rstudio_root_file(), error = TRUE)
+# conveninence functions
+
+# rast = toy_extended
+# main = "extended raster"
+
+rast_text = function(rast, labels = NULL, digits = 2)
+{
+  fmt = paste0("%0.", digits, "f", collapse = "")
+  if (is.null(labels))
+    labels = sprintf(fmt, rast[])
+  
+  
+  labels2 = labels[!is.na(labels)]
+  labels2 = labels[labels != "NA"]
+  
+  
+  # I did not know about this super convenient use of text.raster() !
+  text(
+    x = rast,
+    labels = labels2,
+    # labels = toy[],
+    digits = 2) 
+}
+
+rast_dims = function(rast)
+{
+  cat(
+    sprintf("Raster dimensions: %d rows, %d cols, %d layers, %d cells",
+            dim(rast)[1], dim(rast)[2], dim(rast)[3], ncell(rast))
+  )
+}
+
+rast_plot = function(
+  rast, main, main2 = NULL, 
+  label = TRUE, digits = 1, labels = NULL, 
+  axes = FALSE, box = FALSE, asp = 1.0)
+{
+  
+  if (!is.null(main2)) main = paste0(main, "\n", main2)
+  
+  plot(rast, asp = asp, axes = axes, box = box, main = main)
+  # , main = main, sub = sub)
+  # title(main = main, sub = sub)
+  rast_text(rast, digits = digits)
+}
+
+
+
+# plot(rast)
+
+
+# plot(toy2, asp = 1.0, 
+#      axes = FALSE,
+#      box = FALSE,
+#      main = "Raster cell value assignment order")
+# rast_text(toy2, digits = 0)
+
+```
+
+
+## 2.3.3 A Simple Simulated Example
+```{r example 2.3.3 setup, results = "hold"}
+set.seed(16)
+
+lambda = 3.0
+
+toy = raster(
+  ncol = 6, nrow = 6, 
+  xmn = 1, xmx = 6,
+  ymn = 1, ymx = 6)
+
+values(toy) = rpois(ncell(toy), lambda = lambda)
+
+# raster dims
+rast_dims(toy)
+
+
+```
+```{r plot toy raster}
+# Simple plot using terrain colors as default   
+rast_plot(
+  toy,
+  main = paste0("Poisson random numbers, lambda = ", lambda),
+  digits = 0 # Poisson numbers are integers
+  )
+
+```
+
+
+```{r}
+# Demonstration of how values in a raster are populated when using a vector of input data
+toy2 = toy
+toy2[] = 1:ncell(toy)
+
+rast_plot(
+  toy2, digits = 0,
+  main = "Raster cell value assignment order")
+rast_text(toy2, digits = 0)
+
+```
+
+## Altering raster grain: aggregate()
+
+### Increasing grain
+```{r}
+
+fact = 2
+
+# Use mean value
+toy_mean = aggregate(toy, fact = fact, fun = mean)
+
+# Use majority rule
+toy_mode = aggregate(toy, fact = fact, fun = modal)
+
+rast_plot(toy_mean, main = paste0("Aggregation by mean, factor = ", fact))
+rast_plot(toy_mode, main = paste0("Aggregation by majority rule, factor = ", fact))
+
+
+```
+
+
+
+
+### Reducing grain
+```{r}
+fact2 = 2
+toy_dis2       = disaggregate(toy, fact = fact)
+toy_dis2_bilin = disaggregate(toy, fact = fact, method = "bilinear")
+
+rast_plot(toy_dis2, "disaggregated")
+rast_plot(toy_dis2_bilin, "disaggregated: bilinear method")
+
+```
+
+
+
+
+## Changing the extent
+### decreasing extent
+```{r dec. ext}
+e1 = extent(2, 4, 2, 4 )
+toy_cropped = crop(toy, e1)
+
+rast_plot(toy_cropped, main = "Extent reduction: cropped")
+
+
+```
+
+
+### increasing extent
+```{r incr ext.}
+e2 = extent(0, 7, 0, 7)
+
+toy_extended = extend(toy, e2)
+
+rast_plot(toy_extended, "Extend increase: extend")
+
+```
+
+## Statistics on cell values
+```{r cell stats, results="hold"}
+
+# at least two approaches
+cellStats(toy, mean)
+mean(toy[])
+
+cellStats(toy, var)
+var(toy[])
+
+cellStats(toy_mode, mean)
+cellStats(toy_mean, mean)
+
+```

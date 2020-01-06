@@ -1,0 +1,32 @@
+---
+title: "ch_02_land_cover_multiscale_part_1"
+output: html_document:
+  number_sections: TRUE
+---
+
+```{r setup, include=FALSE, error = TRUE}
+tmp = rprojroot::find_rstudio_root_file()
+knitr::opts_chunk$set(root.dir = tmp, error = TRUE)
+knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = tmp)
+source(paste0(tmp, "/data/environment_vars.R"))
+require(raster)
+rm(tmp)
+```
+
+
+# Chapter 2: Multiscale Analysis of Forest Cover
+
+### Load the National Land Cover Data, viuew a summary of its attributes, and check the projection information:
+```{r 2.3.4, eval="hold"}
+nlcd = raster(paste0(book_data, "nlcd2011SE"))
+
+
+# Raster summary functions
+print(nlcd)
+proj4string(nlcd)
+res(nlcd)
+
+
+```
+
+
