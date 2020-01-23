@@ -1,1 +1,2 @@
-book_data = "C:/Users/michaelnelso/Documents/courses/synced/Box Sync/Fletcher_Fortin_data/Fletcher_Fortin-2018-Supporting_Files/data/"
+book_data = "C:/Users/michaelnelso/Box\ Sync/data/Fletcher_Fortin-2018-Supporting_Files/data/"
+# dir.exists(book_data)

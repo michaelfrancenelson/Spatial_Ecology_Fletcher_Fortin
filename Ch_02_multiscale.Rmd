@@ -1,0 +1,184 @@
+---
+title: "Multiscale Analysis of Forest Cover"
+output: 
+  # pdf_document:
+    # toc: yes
+  html_document:
+    css: css/styles.css
+    number_sections: TRUE
+    toc: true
+    toc_float: true
+---
+
+
+```{r setup, include = FALSE, echo = FALSE}
+tmp = rprojroot::find_rstudio_root_file()
+knitr::opts_chunk$set(root.dir = tmp, error = TRUE)
+knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = tmp)
+source(paste0(tmp, "/data/environment_vars.R"))
+require(raster)
+require(rgdal)
+require(rgeos)
+rm(tmp)
+```
+
+# Read data
+
+## Land cover
+```{r}
+nlcd = raster(paste0(book_data, "nlcd2011SE"))
+proj4string(nlcd)
+res(nlcd)
+```
+
+## Study site data
+```{r}
+sites = readOGR(paste0(book_data, "reptiledata"))
+sites
+head(sites)
+```
+<div class="red">
+There is no projection info!
+
+Normally we should panic, but we can acertain from the book's 
+instructions that it is in the same projection as the land cover raster.
+</div>
+
+```{r}
+proj4string(sites) = proj4string(nlcd)
+```
+
+# Prepare data
+
+## Remove all corn land use data
+The book uses:
+```{r}
+sites_1 = subset(sites, management != "Corn")
+```
+
+## Potential issues
+
+This won't catch data that were coded as 'corn' or 'CORN' or even ' corn  ' (with spaces)
+From experience, it is easy to find inconsistencies in the way data are coded.
+I would probably want to check that I wasn't missing anything.
+
+You could first change all of the management entries to lowercase:
+```{r}
+grep("corn", tolower(sites$management))
+```
+
+You could also use the ignore.case in grep.  I prefer this option.
+```{r}
+grep("corn", sites$management, ignore.case = TRUE)
+```
+
+We need the management types that do not use corn.
+We can invert the grep output to return elements that do not match
+```{r}
+grep("corn", sites$management, ignore.case = TRUE, invert = TRUE)
+```
+
+Do we get the same results with subset() and grep()?
+```{r}
+nrow(subset(sites, management != "Corn"))
+length(grep("corn", sites$management, ignore.case = TRUE, invert = TRUE))
+```
+At least they have the same number of records.
+
+We could do all of this inside subset using ```grepl```
+sites_1 = subset(sites, !grepl("corn", sites$management, ignore.case = TRUE))
+
+There could still be problems though!
+
+* ```grep``` and ```grepl``` try to match a pattern anywhere in the text.
+* What if we had a management type called "not corn"?
+
+What would you do to make sure you weren't missing incorrectly or inconsistently recorded data?
+
+## crop raster to study site
+
+### The book way
+It's faster to do the crop before the factoring.
+There are many ways to do the cropping
+F&F creates an intermediate extent
+
+```{r}
+extent.new = 
+  extent(c(
+    xmin = min(sites$coords_x1) - 10000,
+    xmax = max(sites$coords_x1) + 10000,
+    ymin = min(sites$coords_x2) - 10000,
+    xmax = max(sites$coords_x2) + 10000
+  ))
+
+# nlcd_2 = crop(nlcd, extent.new)
+```
+
+### Other options
+Their method requires us to manually set new min and max coords for the bounding box
+It's much easier, and less error prone, to buffer the extent of the sites data
+We get the same result with more compact and elegant code:
+
+```{r}
+extent(buffer(as(extent(sites), "SpatialPolygons"), 1e4)) == extent.new
+```
+
+We can do the crop without adding an intermediate variable 'extent.new' to our workspace:
+```{r}
+nlcd_2 = crop(
+  nlcd, 
+  extent(buffer(as(extent(sites), "SpatialPolygons"), 1e4))
+)
+nlcd_2
+```
+
+## Factor land cover data
+
+Now convert the crooped raster to a factor:
+
+```{r}
+nlcd_f = as.factor(nlcd_2)
+```
+
+## Reclassify land cover to forest/non-forest
+
+The text tells us that categories 41, 42, and 43 are forest
+```{r}
+levels(nlcd_f)
+```
+
+We can use a handy operator to tell us which levels match 41, 42, or 43
+```{r}
+levels(nlcd_f)[[1]][, 1] %in% 41:43
+```
+
+We could coerce boolean to integer
+```{r}
+cbind(
+  ID = levels(nlcd_f)[[1]],
+  reclass = as.integer(levels(nlcd_f)[[1]][, 1] %in% 41:43)
+)
+```
+
+Here's a trick to implicitly coerce: add 0 to boolean to get an integer
+```{r}
+cbind(
+  ID = levels(nlcd_f)[[1]],
+  reclass = 0 + levels(nlcd_f)[[1]][, 1] %in% 41:43
+)
+```
+
+This trickery only works because we were reclassifying as 0 or 1.
+
+```{r}
+forest = reclassify(
+  nlcd_f, 
+  cbind(
+    ID = levels(nlcd_f)[[1]],
+    reclass = 0 + levels(nlcd_f)[[1]][, 1] %in% 41:43
+  )
+)
+plot(forest)
+plot(sites_1, add = T)
+plot(sites, add = T, col = 2)
+```
