@@ -263,4 +263,3 @@ bbox(sites)
 
 extent(sites)
 buffer(as(extent(sites), SpatialPolygonsDataFrame), 100)
-
