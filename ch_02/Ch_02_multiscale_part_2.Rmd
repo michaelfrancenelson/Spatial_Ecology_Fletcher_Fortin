@@ -4,12 +4,13 @@ output:
   # pdf_document:
     # toc: yes
   html_document:
-    css: css/styles.css
+    css: ../css/styles.css
     number_sections: TRUE
     toc: true
     toc_float: true
 ---
 
+My opinionated walkthrough of the Multiscale R examples in chapter 2
 
 ```{r setup, include = FALSE, echo = FALSE}
 tmp = rprojroot::find_rstudio_root_file()
@@ -38,10 +39,12 @@ sites
 head(sites)
 ```
 <div class="red">
-There is no projection info!
+Warning:  There is no projection info!
 
 Normally we should panic, but we can acertain from the book's 
 instructions that it is in the same projection as the land cover raster.
+
+In real life this could be a VERY serious problem for our analyses.
 </div>
 
 ```{r}
@@ -58,8 +61,8 @@ sites_1 = subset(sites, management != "Corn")
 
 ## Potential issues
 
-This won't catch data that were coded as 'corn' or 'CORN' or even ' corn  ' (with spaces)
-From experience, it is easy to find inconsistencies in the way data are coded.
+This won't catch data that were coded as 'corn' or 'CORN' or even ' corn  ' (with spaces).
+In my experience, data coding is an error-prone process so it pays to do some quality control.
 I would probably want to check that I wasn't missing anything.
 
 You could first change all of the management entries to lowercase:
@@ -90,7 +93,7 @@ sites_1 = subset(sites, !grepl("corn", sites$management, ignore.case = TRUE))
 
 There could still be problems though!
 
-* ```grep``` and ```grepl``` try to match a pattern anywhere in the text.
+* `grep` and `grepl` try to match a pattern anywhere in the text.
 * What if we had a management type called "not corn"?
 
 What would you do to make sure you weren't missing incorrectly or inconsistently recorded data?

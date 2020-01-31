@@ -1,6 +1,11 @@
 ---
 title: "Fletcher & Fortin - Chapter 2"
-output: html_document
+
+html_document:
+    css: ../css/styles.csss
+    number_sections: TRUE
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}

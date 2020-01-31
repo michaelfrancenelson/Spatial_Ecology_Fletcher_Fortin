@@ -1,0 +1,550 @@
+---
+title: "Multiscale Analysis of Forest Cover"
+subtitle: "Walkthrough by Michael France Nelson"
+output: 
+  # pdf_document:
+    # toc: yes
+  html_document:
+    css: ../css/styles.css
+    number_sections: TRUE
+    toc: true
+    toc_float: true
+---
+
+
+Continuation of my opinionated walkthrough.
+I'm going to use sf for vector data in part 3
+
+
+```{r setup, include = FALSE, echo = FALSE}
+tmp = rprojroot::find_rstudio_root_file()
+knitr::opts_chunk$set(root.dir = tmp, error = TRUE)
+knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = tmp)
+source(paste0(tmp, "/data/environment_vars.R"))
+require(raster)
+require(rgdal)
+require(rgeos)
+require(sf)
+require(ggplot2)
+rm(tmp)
+```
+
+# Data Import
+
+## NLCD data
+```{r error = TRUE}
+# sf doesn't seem to like `.adf` files
+# nlcd = st_read(paste0(book_data, "nlcd2011SE/"))
+
+# and this isn't working...
+nlcd = st_as_sf(raster(paste0(book_data, "nlcd2011SE")))
+
+# use raster for now
+nlcd = raster(paste0(book_data, "nlcd2011SE"))
+nlcd
+```
+
+
+## Sites vector data
+
+Reading with `st_read` is less finnicky than `readOGR`
+```{r}
+sites = st_read(paste0(book_data, "reptiledata"))
+st_crs(sites) = proj4string(nlcd)
+print(sites)
+```
+
+You can use `subset` on `sf` objects:
+See my comments in part 2 about matching 'corn' in the management field.
+```{r}
+
+grepl("corn", sites$management, ignore.case = TRUE)
+sites_1 = subset(sites, !grepl("corn", sites$management, ignore.case = TRUE))
+print(sites_1)
+sites = sites_1
+sites[1, ]
+# remove the temporary var from memory
+rm(sites_1)
+```
+
+
+## Forest mask
+
+<!-- Factoring the whole raster was fairly slow, but we can sppeed it up by cropping first. -->
+<!-- The study area is which is about 32% of the total: -->
+
+<!-- ```{r} -->
+<!-- nlcd_sites = crop(nlcd, sites) -->
+<!-- ncell(nlcd_sites) / ncell(nlcd) -->
+<!-- ``` -->
+
+
+Factoring the entire raster takes about 22 seconds on my computer.
+It's easy to see how long a process takes with `system.time()`.
+Use curly braces around the code you want to run.
+You don't really have to factor the raster at all, though.  
+It's probably easier to work with the values directly.
+
+```{r, include = FALSE}
+system.time({nlcd_f = as.factor(nlcd)})
+```
+
+# Buffer sample sites
+
+A custom buffer function makes creating the raster with buffer much easier:
+`spgeom` is the spatial object we want to buffer
+`rast` is the raster we want to crop to the buffered size
+`dist` is the width of the buffer
+
+```{r}
+raster_buffer_site = function(rast, spgeom, dist)
+{
+  sp1 = st_buffer(spgeom, dist = dist)
+  crp = crop(rast, sp1)
+  return(mask(crp, sp1))
+}
+
+b1 = 1e4
+b2 = 5e4
+
+plot(raster_buffer_site(nlcd, sites[1, ], b1))
+plot(raster_buffer_site(nlcd, sites[1, ], b2))
+
+```
+
+
+
+# Classify habitat/non habitat
+
+It's not necessary to classify habitat/non-habitat yet.
+Making a mask of the whole raster is time-consuming, and it commits us to a particular
+habitat/non-habitat classification scheme early in the process.
+
+Since specifying habitat/non-habitat will be useful we can make a more flexible
+function so we can specify which cover classes are habitat.
+```{r}
+habitat_mask = function(rast, to_keep)
+{
+  
+  # rast = raster_buffer_site(nlcd, sites[i, ], b1)
+  # mask_out = raster(raster_buffer_site(nlcd, sites[i, ], b1))
+# site_i[1, 1]
+# mask_out[1, 1]
+
+  mask_out = rast * 0
+    # raster(rast)
+  # plot(mask_out)
+  # mask_out[!is.na(rast[])] = 0
+  mask_out[rast[] %in% to_keep] = 1
+  return(mask_out)
+}
+```
+
+The `%in%` operator is an easy way to test whether any elements of a vector are present in a colleciton of values.
+It is a pretty quick way to build a mask in this case.
+Using the square brackets with a raster is a shortcut to retrieve its values as a vector.
+
+
+# Habitat/non-habitat areas
+
+The book makes some conversion factors to use on intermediate quantities, but it's easier to work with cell counts and do any necessary conversions at the end.
+
+We can wrap it up into a big function that returns lots of relevant stuff:
+```{r}
+hab_stats = function(rast, spgeom, dist, hab_codes)
+{
+  site = raster_buffer_site(rast, spgeom, dist)
+  hab = habitat_mask(site, hab_codes)
+  n_cells_buffer = ncell(hab) - sum(is.na(hab)[])
+  n_cells_hab    = sum(hab[] == 1, na.rm = T)
+  return(list(
+    site_buffer = site, 
+    habitat_buffer = hab, 
+    prop_hab = n_cells_hab / n_cells_buffer, 
+    n_habitat = n_cells_hab, 
+    n_buffer = n_cells_buffer))
+}
+
+i = 1
+hab_i = hab_stats(nlcd, sites[i, ], b2, c(41, 42, 43))
+
+str(hab_i)
+plot(hab_i$site_buffer)
+plot(hab_i$habitat_buffer)
+hab_i$prop_hab
+```
+
+
+
+
+
+
+
+<!-- ```{r} -->
+<!-- i = 1 -->
+<!-- keep = c(41, 42, 43) -->
+
+<!-- site_i = raster_buffer_site(nlcd, sites[i, ], b1) -->
+<!-- plot(site_i) -->
+
+<!-- habitat_i = habitat_mask(site_i, keep) -->
+<!-- plot(habitat_i) -->
+
+<!-- sum(habitat_i[] == 0, na.rm = T) -->
+
+<!-- hab_prop = function(x) return(sum(x[] == 1, na.rm = T) / (ncell(x) - sum(is.na(x)[]))) -->
+
+
+
+<!-- hab_prop(habitat_i) -->
+
+
+
+
+<!-- # number of cells in the buffer: -->
+<!-- ncell(habitat_i) - sum(is.na(habitat_i)[]) -->
+
+<!-- # number of habitat cells: -->
+<!-- sum(habitat_i[] == 1, na.rm = T)  -->
+
+
+
+<!-- ``` -->
+
+
+
+
+<!-- The book makes forest/nonforest masks, but working with the original land cover data allows more flexibility. -->
+<!-- I prefer not to throw out information too early in the process. -->
+
+<!-- We can make a buffered mask of the original nlcd data using `buffer_site()`.  -->
+
+<!-- Then we can choose which cover types within the area we want to work with. -->
+
+
+
+<!-- <!-- Creating a forest mask directly from the cropped nlcd data is quick: --> -->
+
+<!-- <!-- ```{r} --> -->
+<!-- <!-- # This is a quick way to make a template raster from an existing raster --> -->
+<!-- <!-- forest_mask = raster(nlcd_sites) --> -->
+
+<!-- <!-- # setting all values to 0 is quick --> -->
+<!-- <!-- system.time({ values(forest_mask) = 0 }) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- The `%in%` operator is an easy way to test whether any elements of a vector are present in a colleciton of values. --> -->
+<!-- <!-- It is a pretty quick way to build a mask in this case. --> -->
+<!-- <!-- Using the square brackets with a raster is a shortcut to retrieve its values as a vector. --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- types_keep = c(41, 42, 43) --> -->
+<!-- <!-- system.time({ forest_mask[nlcd_sites[] %in% types_keep] = 1 }) --> -->
+
+<!-- <!-- { --> -->
+<!-- <!--   dev.off() --> -->
+<!-- <!--   { --> -->
+<!-- <!--     par(mfrow = c(2, 1)) --> -->
+<!-- <!--     plot(nlcd_sites, axes = F, legend = F, box = F, main = "NLCD") --> -->
+<!-- <!--     plot(forest_mask, axes = F, legend = F, box = F, main = "Forest Mask") --> -->
+<!-- <!--   } --> -->
+<!-- <!-- } --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ## Study area mask --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- keep_types = c(41, 42, 43) --> -->
+<!-- <!-- # type_msk = habitat_mask(nlcd_sites, keep_types) --> -->
+<!-- <!-- # plot(type_msk) --> -->
+<!-- <!-- ``` --> -->
+
+
+
+
+<!-- # Buffer sites -->
+
+<!-- ```{r} -->
+
+<!-- # Buffer at two scales, 1km and 5km -->
+<!-- b1 = 1e3 -->
+<!-- b2 = 5e3 -->
+
+<!-- i = 1 -->
+
+<!-- site_i = st_buffer(sites[i, ], dist = b1) -->
+<!-- plot(mask(crop(forest_mask, site_i), site_i)) -->
+<!-- plot(st_geometry(st_buffer(sites[i, ], dist = b1))) -->
+
+
+<!-- sites[i, ] -->
+
+<!-- ``` -->
+
+
+
+
+<!-- # Forest area in buffer -->
+
+<!-- The book makes some conversion factors to use on intermediate quantities, but I think this makes the code less readable and more error prone. -->
+
+<!-- It's easier to work with cell counts and do any necessary conversions at the end. -->
+
+<!-- The book makes forest/nonforest masks, but working with the original land cover data allows more flexibility. -->
+<!-- I prefer not to throw out information too early in the process. -->
+
+<!-- We can make a buffered mask of the original nlcd data using `buffer_site()`.  -->
+
+<!-- Then we can choose which cover types within the area we want to work with. -->
+
+<!-- ```{r} -->
+<!-- msk = buffer_site(nlcd_sites, sites[i, ], b1) -->
+<!-- plot(msk) -->
+
+<!-- # How many cells in categories 42 or 43? -->
+<!-- sum(msk[] %in% c(42, 43), na.rm = TRUE) -->
+<!-- sum(msk[] %in% c(41, 42, 43), na.rm = TRUE) -->
+
+<!-- # Cells outside the buffer will be NA -->
+<!-- sum(is.na(msk[])) -->
+<!-- plot(is.na(msk)) -->
+
+<!-- ``` -->
+
+
+<!-- # Percent habitat calculator -->
+<!-- A more flexible function for percent habitat -->
+<!-- ```{r} -->
+
+<!-- # Make a buffered mask of habitat/non habitat -->
+<!-- buffer_hab_mask = function(rast, spgeom, dist, habitat) -->
+<!-- { -->
+<!--   buff = buffer_site(rast, spgeom, dist)  -->
+
+<!--   # A shortcut to make a copy of buff with zeroes in all -->
+<!--   # cells that are not NA -->
+<!--   hab = buff * 0 -->
+<!--   hab[buff[] %in% habitat] = 1 -->
+
+<!--   return (hab) -->
+<!-- } -->
+
+
+
+
+
+<!-- plot(buffer_hab_mask(nlcd, sites[i, ], b1, c(43, 42, 41))) -->
+
+<!-- buff = buffer_site(nlcd, sites[i, ], b1) -->
+<!-- plot(buff %in% keep_types + 0) -->
+
+<!-- buff[!is.na(buff[])] = 0 -->
+<!-- buff[buff[] %in% keep_types] -->
+
+
+<!-- values(buff) = 0 -->
+
+<!-- mask(buff, buff) -->
+
+<!-- plot(buff) -->
+
+<!-- plot(mask(buff, buff)) -->
+
+
+
+<!-- hab_mask(nlcd_sites, sites[i, ], b1, c(42, 43)) -->
+<!-- plot(hab_mask(nlcd_sites, sites[i, ], b1, c(42, 43))) -->
+
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- # habitat is a vector with the raster values that  -->
+<!-- # are considered habitat. -->
+<!-- pct_habitat = function(rast, habitat) -->
+<!-- { -->
+<!--   n_hab_cells = sum(rast[] %in% habitat) -->
+<!--   n_tot_cells = ncell(rast) - sum(is.na(rast[])) -->
+<!--   return (n_hab_cells / n_tot_cells) -->
+<!-- } -->
+
+<!-- pct_habitat(buffer_site(nlcd_sites, sites[i, ], b1), c(41, 42)) -->
+<!-- pct_habitat(buffer_site(nlcd_sites, sites[i, ], b1), c(41, 42, 43)) -->
+
+<!-- ``` -->
+
+<!-- # My percent habitat function -->
+
+<!-- I wrap all of this up into a more flexible version of `BufferCover`: -->
+<!-- ```{r} -->
+
+<!-- hab_cover = function(rast, spgeom, dist, habitat) -->
+<!-- { -->
+<!--   # buffered mask of the parent raster -->
+<!--   buff = buffer_site(rast, spgeom, dist) -->
+<!--   return (pct_habitat(buff, habitat)) -->
+<!-- } -->
+
+<!-- i = 1 -->
+<!-- plot(buffer_site(nlcd_sites, sites[i,], b1)) -->
+<!-- hab_cover(nlcd_sites, sites[i, ], b1, c(41, 43)) -->
+<!-- hab_cover(nlcd_sites, sites[i, ], b1, c(41, 42, 43)) -->
+
+
+<!-- ``` -->
+
+
+
+
+
+
+<!-- ```{r} -->
+<!-- # number of habitat cells in the buffer -->
+<!-- msk = buffer_site(forest_mask, sites[1, ], b1) -->
+
+<!-- sum(msk[] == 1, na.) -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- cellStats(buffer_site(forest_mask, sites[1, ], b1), "sum") -->
+<!-- cellStats(buffer_site(forest_mask, sites[1, ], b1), "") -->
+
+<!-- crop(forest_mask, sites[2, ]) -->
+
+
+<!-- st_buffer(sites[i, ], b1) -->
+
+
+
+
+<!-- sum(is.na(buffer_site(forest_mask, sites[1, ], b1)[])) -->
+<!-- plot(is.na(buffer_site(forest_mask, sites[1, ], b1))) -->
+
+
+
+
+
+
+
+<!-- ``` -->
+
+
+
+
+
+
+
+<!-- as.character(sites$management) -->
+
+<!-- # I'll  -->
+<!-- grepl(pattern = regex_corn, as.character(sites$management), ignore.case = TRUE) -->
+<!-- grepl(pattern = regex_corn, as.character(sites$management), ignore.case = TRUE) -->
+
+
+<!-- as.character(sites$management[70]) -->
+<!-- sites$management -->
+
+<!-- grepl("corn", " managed corn ", ignore.case = TRUE) -->
+
+<!-- grepl(regex_corn, as.character(sites$management[70])) -->
+<!-- as.character(sites$management[70]) -->
+
+<!-- grepl(regex_corn, "Corn") -->
+
+<!-- sites$management -->
+
+<!-- length(grep("corn", sites$management, ignore.case = TRUE, invert = TRUE)) -->
+
+
+<!-- ``` -->
+
+
+<!-- # R examples, continued -->
+
+<!-- My implementation of the material from page 36 to _____ -->
+
+<!-- # Illustration with site 1 -->
+
+<!-- ## Buffering study sites : -->
+
+<!-- I'm using `b1` and `b2` as variable names becuase I don't want -->
+<!-- to commit to only using 1km and 5km. -->
+
+<!-- I also prefer camel case. -->
+
+<!-- ```{r} -->
+<!-- b1 = 1e3 -->
+<!-- b2 = 5e3 -->
+
+<!-- site_buffered_1 = buffer(sites[1, ], width = b1) -->
+<!-- site_buffered_2 = buffer(sites[1, ], width = b2) -->
+<!-- ``` -->
+
+
+<!-- ## zooming in -->
+<!-- The `zoom()` function won't work if there is not already a plot window open. -->
+<!-- ```{r} -->
+<!-- plot(0, type = "n") -->
+<!-- zoom(nlcd, site_buffered_1) -->
+<!-- zoom(nlcd, site_buffered_1, legend = F, axes = F, col = terrain.colors(5)) -->
+<!-- zoom(nlcd, site_buffered_2, legend = F, axes = F, col = terrain.colors(5)) -->
+<!-- plot(site_buffered_1, add = T) -->
+<!-- points(sites, pch = 19, cex = 2,  add = TRUE) -->
+<!-- ``` -->
+
+<!-- ## dev.off() is your friend -->
+<!-- dev.off() -->
+
+<!-- # Cropping and masking -->
+
+<!-- # crop is fast, mask is a lot slower (it's a more complicated operation). -->
+<!-- # The `mask()` function keeps the original raster extent, but we only care about our study site. -->
+<!-- # If you crop first, you only have to mask a small raster, which will execute much faster! -->
+
+<!-- ## Timing test 1: mask -->
+<!-- ```{r} -->
+<!-- t1 = proc.time() -->
+<!-- site_mask = mask(forest, site_buffered_1) -->
+<!-- elapsed = proc.time() - t1 -->
+<!-- elapsed -->
+<!-- ``` -->
+
+<!-- ## Timing test 2: crop -->
+<!-- ```{r} -->
+<!-- t1 = proc.time() -->
+<!-- site_cropped = crop(forest, site_buffered_1) -->
+<!-- elapsed = proc.time() - t1 -->
+<!-- elapsed -->
+<!-- ``` -->
+
+<!-- ## Timing test 3: crop, then mask -->
+<!-- ```{r} -->
+<!-- t1 = proc.time() -->
+<!-- site_cropped = crop(forest, site_buffered_1) -->
+<!-- site_mask = mask(site_cropped, site_buffered_1) -->
+<!-- elapsed = proc.time() - t1 -->
+<!-- elapsed -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- plot(crop(m1, site_buffered_1)) -->
+<!-- plot(m2) -->
+
+<!-- plot(mask(crop(forest, site_buffered_1), site_buffered_1)) -->
+<!-- plot(mask(crop(forest, site_buffered_2), site_buffered_2)) -->
+<!-- ``` -->
+
+<!-- <div class="red"> -->
+<!-- Note:  The crop and mask code on page 37 overrwrites the buffered site variable. -->
+<!-- I think this is poor programming practice, so I used separate variables for all the intermediate steps. -->
+<!-- </div> -->

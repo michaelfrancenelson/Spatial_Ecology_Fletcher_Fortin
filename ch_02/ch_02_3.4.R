@@ -15,8 +15,23 @@
 
 # Read data files ----
 {
+  # this does not work!
+  # this code is telling R to look in my current working directory
+  # for something called "nlcd2011SE" (which we stored elsewhere).
+  nlcd = raster("nlcd2011SE")
   
-  nlcd = raster(paste0(book_data, "nlcd2011SE"))
+  paste0(1, 2, 3, 4)
+
+  # prints the results of running paste0() to the console
+  paste0(book_data, "nlcd2011SE")
+    
+  # This is first evaluating paste0() inside of raster()
+  # The results form paste0() are then used by raster()
+  # Innermost functions are evaluated first.
+  nlcd = raster(
+    paste0(book_data, "nlcd2011SE"))
+  
+  
   proj4string(nlcd)
   res(nlcd)
   
