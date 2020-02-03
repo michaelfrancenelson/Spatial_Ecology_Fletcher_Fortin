@@ -1,0 +1,53 @@
+---
+title: "Fletcher and Fortin, Chapter 3: Land-Cover Pattern and Change"
+subtitle: "Walkthrough by Michael France Nelson"
+output: 
+  # pdf_document:
+    # toc: yes
+  html_document:
+    css: ../css/styles.css
+    number_sections: TRUE
+    toc: true
+    toc_float: true
+---
+
+
+Continuation of my opinionated walkthrough.
+I'm going to use sf for vector data for this chapter
+
+
+```{r setup, include = FALSE, echo = FALSE}
+tmp = rprojroot::find_rstudio_root_file()
+knitr::opts_chunk$set(root.dir = tmp, error = TRUE)
+knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = tmp)
+source(paste0(tmp, "/data/environment_vars.R"))
+require(raster)
+require(rgdal)
+require(rgeos)
+require(sf)
+require(lulcc)
+
+# require(ggplot2)
+# require(psych)
+rm(tmp)
+```
+
+# Data Import
+
+
+
+
+
+
+#
+
+
+
+
+
+
+
+
+#
+
+
