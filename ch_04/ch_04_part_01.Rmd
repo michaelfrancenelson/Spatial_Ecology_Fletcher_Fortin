@@ -24,14 +24,14 @@ require(spatstat)
 # require(sf)
 # require(lulcc)
 
-# require(ggplot2)
+require(ggplot2)
 # require(psych)
 rm(tmp)
 ```
 
 
 
-# Data
+# Data import and visualization (FF 4.3.3)
 bbb
 
 *Opuntia humifusa*
@@ -44,7 +44,7 @@ In the book, the cactus boundaries filename is *cactus_boundary.csv*, however th
 The supplemental data files do not contain *cactus_boundary.csv*.
 </div>
 
-```{r prepare data}
+```{r prepare data, error = TRUE}
 cactus = read.csv(paste0(book_data, "/cactus.csv"), header = T)
 
 # this fails
@@ -64,7 +64,7 @@ boundary_poly = readOGR(paste0(book_data, "/cactus_boundaries"))
 
 ```
 
-# Cactus positions: CSR?
+## Cactus positions vs. CSR?
 
 Use quadrat functions in spatstat:
 
@@ -80,10 +80,9 @@ hist(q_cactus)
 ```
 
 
-# Quantifying cactus point patterns
+# Univariate Point Patterns (FF 4.3.4)
 
-
-Use K and L functions
+## K and L functions
 
 No edge effect correction.
 
@@ -103,7 +102,7 @@ plot(l_cactus)
 ```
 
 
-# Cactus point patterns - edge effects
+## K and L with edge correction
 
 
 
@@ -115,26 +114,56 @@ k_cactus_t = Kest(ppp_cactus, correction = "translate")
 l_cactus_t = Lest(ppp_cactus, correction = "translate")
 
 {
-par(mfrow = c(3, 2))
-
-plot(k_cactus, main = "No correction")
-plot(l_cactus, main = "No correction")
-plot(k_cactus_i, main = "Isotropic correction")
-plot(l_cactus_i, main = "Isotropic correction")
-plot(k_cactus_t, main = "Translation correction")
-plot(l_cactus_t, main = "Translation correction")
+  par(mfrow = c(3, 2))
+  
+  plot(k_cactus, main = "No correction")
+  plot(l_cactus, main = "No correction")
+  plot(k_cactus_i, main = "Isotropic correction")
+  plot(l_cactus_i, main = "Isotropic correction")
+  plot(k_cactus_t, main = "Translation correction")
+  plot(l_cactus_t, main = "Translation correction")
 }
 
-# I haven't used the syntax in the second argument before
+
+```
+
+## L-Functions normalized to 0
+
+I haven't used the syntax in the second argument before but it's kind of elegant, if a bit opaque at first.
+
+
+```{r}
 plot(l_cactus_i, . - r ~ r)
 
 ```
 
 
+## Ggplot with Kest and Lest?
 
-# Cactus dispersion significance
+```{r}
+str(l_cactus_i, 1)
 
-MCMC simulation for CSR rejection region
+ggplot(l_cactus_i, aes(x = r, y = iso)) +
+  geom_line() +
+  geom_line(aes(x = r, y = theo), colour = "red") +
+  xlab("Radius") + ylab("L")
+
+ggplot(l_cactus_i, aes(x = r, y = iso - r)) +
+  geom_line()
+
+
+
+```
+
+
+## Dispersion significance
+
+Page 118
+
+MCMC simulation for CSR rejection region.
+
+
+Figure 4.7a includes a global envelope
 
 ```{r}
 
@@ -143,27 +172,94 @@ csr_env_cactus = envelope(
   fun = Lest,
   nsim = 99,
   rank = 1,
-  correction = "translate",
+  correction = "iso",
   global = FALSE)
 
-plot(csr_env_cactus, . - r ~ r, shade = c("hi", "lo"))
+csr_env_cactus_global = envelope(
+  ppp_cactus, 
+  fun = Lest,
+  nsim = 99,
+  rank = 1,
+  correction = "isotropic",
+  global = TRUE)
+
+str(csr_env_cactus_global, 1)
+# {
+  # par(mfrow = c(2, 1))
+  plot(csr_env_cactus, . - r ~ r, shade = c("hi", "lo"), legend = F, xlab = "normalized L", main = "L-function with MCMC envelope")
+  plot(csr_env_cactus, shade = c("hi", "lo"), legend = F, xlab = "normalized L", main = "L-function with MCMC envelope")
+  plot(csr_env_cactus_global, shade = c("hi", "lo"))
+  # plot(csr_env_cactus_none, . - r ~ r, shade = c("hi", "lo"))
+# }
 
 
 ```
 
-# Cactus dispersion with pair correlation function
+## Pair correlation function
 
+From page 119
 
+Are the `translate` and `translation` options different?
 
+From the `Kest` help entry it seems that they are...
+
+Figure 4.7b has an additional curve with higher smoothing using a `stoyan` value higher than 0.15.
+
+Their values are much lower near r = 0.
 
 ```{r}
 
+
+pair_cactus_t = pcf(ppp_cactus, correction = "translate")
 pair_cactus_t = pcf(ppp_cactus, correction = "translation")
-plot(pair_cactus_t)
+pair_cactus_env = envelope(ppp_cactus, pcf, nsim = 99, rank = 1, correction = "translation", global = FALSE)
+pair_cactus_env_2 = envelope(ppp_cactus, pcf, nsim = 99, rank = 1, correction = "translation", global = FALSE, funargs = list(stoyan = 0.4))
+plot(pair_cactus_t, legend = F)
+plot(pair_cactus_env, legend = F)
+plot(pair_cactus_env_2, legend = F)
 
-
+{
+plot(pair_cactus_env, xlim = c(0.2, 14), ylim = c(0, 2.5), legend = F, shade = c("lo", "hi"), ylab = "radius", main = "pair correlation function (g)")
+points(obs ~ r, data = pair_cactus_env_2, type = "l")
+}
 
 
 ```
+
+
+
+
+
+## Nearest neighbor: G-function
+
+
+Y-axis is the probability that the nearest-neighbor is at most r units away. 
+I.e. that the nearest-neighbor is closer than r units.
+
+X-axis range is much smaller than for `K(r)` because the nearest-neighbor for any cacti are no more than 4 m away.
+
+
+G(r) is higher than the 95% confidence envelope in the range of 2 to 3 meters.
+
+High values for G(r) mean that more points have shorter nearest-neighbor distances than expected.
+The probability of points being closer together than r is higher than in CSR suggesting aggregation.
+
+
+Adding the ECDF doesn't add additional info and makes the plot harder to interpret (in my opinion).
+
+
+```{r}
+g_env_cactus = pair_cactus_env = envelope(ppp_cactus, Gest, nsim = 99, rank = 1, correction = "rs", global = FALSE)
+
+nn_cactus = nndist(ppp_cactus)
+nn_cactus
+
+plot(g_env_cactus, main = "G-function"); plot(ecdf(nn_cactus), add = T)
+```
+
+
+
+# Marked Point Patterns - section 4.3.5
+
 
 
