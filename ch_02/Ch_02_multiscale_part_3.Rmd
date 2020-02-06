@@ -155,8 +155,11 @@ hab_stats = function(rast, spgeom, dist, hab_codes)
     n_buffer = n_cells_buffer))
 }
 
+hab_types = c(41, 42, 43 )
+hab_types = 11
+
 i = 1
-hab_i = hab_stats(nlcd, sites[i, ], b1, c(41, 42, 43))
+hab_i = hab_stats(nlcd, sites[i, ], b1, 11)
 {
   par(mfrow = c(1, 2), oma = c(0, 0, 0, 0), mar = c(0, 1, 3, 0))
   plot(
@@ -169,6 +172,12 @@ hab_i = hab_stats(nlcd, sites[i, ], b1, c(41, 42, 43))
     main = "Habitat/non-habitat")
 }
 hab_i$prop_hab
+
+plot(hab_i$habitat_buffer)
+
+i = 3
+plot( hab_stats(nlcd, sites[i, ], b1, 11)$habitat_buffer)
+
 ```
 
 
@@ -179,6 +188,8 @@ hab_i$prop_hab
 buffers = c(1e2, 5e2, 1e3, 2e3, 3e3, 4e3)
 dat = data.frame(site = 1:nrow(sites))
 
+keep_types = c(11)
+
 system.time(
   {
     for (b in buffers[-1])
@@ -186,7 +197,7 @@ system.time(
       pct_i = c()
       for (i in 1:nrow(sites))
       {
-        h_i = hab_stats(nlcd, sites[i, ], b, c(41, 42, 43))
+        h_i = hab_stats(nlcd, sites[i, ], b, keep_types)
         pct_i = c(pct_i, h_i$prop_hab)
       }
       dat = cbind(dat, pct_i)

@@ -1,0 +1,169 @@
+---
+title: "Fletcher and Fortin, Chapter 4: Spatial Dispersion and Point Data"
+subtitle: "Walkthrough by Michael France Nelson"
+output: 
+  # pdf_document:
+    # toc: yes
+  html_document:
+    css: ../css/styles.css
+    number_sections: TRUE
+    toc: true
+    toc_float: true
+---
+
+
+```{r setup, include = FALSE, echo = FALSE}
+tmp = rprojroot::find_rstudio_root_file()
+knitr::opts_chunk$set(root.dir = tmp, error = TRUE)
+knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = tmp)
+source(paste0(tmp, "/data/environment_vars.R"))
+require(raster)
+require(rgdal)
+require(rgeos)
+require(spatstat)
+# require(sf)
+# require(lulcc)
+
+# require(ggplot2)
+# require(psych)
+rm(tmp)
+```
+
+
+
+# Data
+bbb
+
+*Opuntia humifusa*
+
+<div class = "red">
+In the book, the cactus boundaries filename is *cactus_boundary.csv*, however the file provided with the book's supplemental materials is *cactus_boundaries.csv*.
+</div>
+
+<div class = "red">
+The supplemental data files do not contain *cactus_boundary.csv*.
+</div>
+
+```{r prepare data}
+cactus = read.csv(paste0(book_data, "/cactus.csv"), header = T)
+
+# this fails
+# boundary = read.csv(paste0(book_data, "/cactus_boundary.csv"), header = T)
+boundary = read.csv(paste0(book_data, "/cactus_boundaries.csv"), header = T)
+
+ppp_window = owin(xrange = c(boundary$Xmin, boundary$Xmax), yrange = c(boundary$Ymin, boundary$Ymax))
+ppp_cactus = ppp(cactus$East, cactus$North, window = ppp_window)
+
+
+plot(ppp_cactus)
+plot(raster::density(ppp_cactus))
+summary(ppp_cactus)
+
+# no such file
+boundary_poly = readOGR(paste0(book_data, "/cactus_boundaries"))
+
+```
+
+# Cactus positions: CSR?
+
+Use quadrat functions in spatstat:
+
+```{r}
+q_cactus = quadratcount(ppp_cactus, nx = 4, ny = 4)
+plot(q_cactus)
+str(q_cactus, 1)
+
+quadrat.test(ppp_cactus, nx = 4, ny = 4)
+
+c(q_cactus)
+hist(q_cactus)
+```
+
+
+# Quantifying cactus point patterns
+
+
+Use K and L functions
+
+No edge effect correction.
+
+
+```{r}
+
+k_cactus = Kest(ppp_cactus, correction = "none")
+l_cactus = Lest(ppp_cactus, correction = "none")
+
+
+plot(k_cactus)
+plot(l_cactus)
+# k_cactus
+
+
+
+```
+
+
+# Cactus point patterns - edge effects
+
+
+
+```{r}
+
+k_cactus_i = Kest(ppp_cactus, correction = "isotropic")
+l_cactus_i = Lest(ppp_cactus, correction = "isotropic")
+k_cactus_t = Kest(ppp_cactus, correction = "translate")
+l_cactus_t = Lest(ppp_cactus, correction = "translate")
+
+{
+par(mfrow = c(3, 2))
+
+plot(k_cactus, main = "No correction")
+plot(l_cactus, main = "No correction")
+plot(k_cactus_i, main = "Isotropic correction")
+plot(l_cactus_i, main = "Isotropic correction")
+plot(k_cactus_t, main = "Translation correction")
+plot(l_cactus_t, main = "Translation correction")
+}
+
+# I haven't used the syntax in the second argument before
+plot(l_cactus_i, . - r ~ r)
+
+```
+
+
+
+# Cactus dispersion significance
+
+MCMC simulation for CSR rejection region
+
+```{r}
+
+csr_env_cactus = envelope(
+  ppp_cactus, 
+  fun = Lest,
+  nsim = 99,
+  rank = 1,
+  correction = "translate",
+  global = FALSE)
+
+plot(csr_env_cactus, . - r ~ r, shade = c("hi", "lo"))
+
+
+```
+
+# Cactus dispersion with pair correlation function
+
+
+
+
+```{r}
+
+pair_cactus_t = pcf(ppp_cactus, correction = "translation")
+plot(pair_cactus_t)
+
+
+
+
+```
+
+
