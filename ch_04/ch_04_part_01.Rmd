@@ -44,6 +44,8 @@ In the book, the cactus boundaries filename is *cactus_boundary.csv*, however th
 The supplemental data files do not contain *cactus_boundary.csv*.
 </div>
 
+
+
 ```{r prepare data, error = TRUE}
 cactus = read.csv(paste0(book_data, "/cactus.csv"), header = T)
 
