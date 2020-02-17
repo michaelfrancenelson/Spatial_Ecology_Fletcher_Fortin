@@ -1,0 +1,309 @@
+---
+title: "Fletcher and Fortin, Chapter 4: Spatial Dispersion and Point Data"
+subtitle: "Walkthrough by Michael France Nelson, part 2 - marked point patterns"
+output: 
+  # pdf_document:
+    # toc: yes
+  html_document:
+    css: ../css/styles.css
+    number_sections: TRUE
+    toc: true
+    toc_float: true
+---
+
+
+
+
+```{r setup, include = FALSE, echo = FALSE}
+if (! "here" %in% data.frame(installed.packages())$Package) install.packages("here")
+
+# We don't want maptools for this material:
+# if (! "maptools" %in% data.frame(installed.packages())$Package) install.packages("maptools")
+
+# require(raster)
+# require(rgdal)
+# require(rgeos)
+# require(ggplot2)
+
+require(sp)
+require(spatstat)
+require(here)
+
+knitr::opts_chunk$set(root.dir = here(), error = TRUE)
+knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = here())
+
+source(here("/data/environment_vars.R"))
+```
+
+
+# Overview
+
+I prefer to avoid storing intermediate variables in the R gobal environment if I don't have to.
+
+I like to use them when I'm learning new techniques, writing functions, or giving demos.  
+
+I think final code is more readable and efficient with as few intermediate variables as possible.  
+It also helps with debugging and avoiding unintended global variables producing unintended effects debugging: think of the extra variable `i` in the book's `BufferCover()` function from Chapter 2.
+
+
+I'm going to set the random number generator seed for reproducibalilty:
+```{r}
+set.seed(1234554321)
+```
+
+
+
+# Package 'here'
+
+I recently discovered the package 'here'.  It is fantastic.
+
+This code will conditionally install packages if they are not present:
+
+```{r, eval = FALSE}
+if (! "here" %in% data.frame(installed.packages())$Package) install.packages("here")
+```
+
+
+
+
+# Data import 
+
+
+## Using `coordinates()`
+
+You can use `coordinates() =` as a shortcut to build a spatial points object from a dataframe.
+
+Note:  this is a R function that *does* use side effects!  R conventions aren't totally consistent on side effects, but it's usually safe to assume that functions do't use them.
+
+`coordinates` can accept a vector of coordinate column names, or you can use the formulat notation.
+
+```{r prepare data, error = TRUE}
+cactus = read.csv(paste0(book_data, "/cactus.csv"), header = T)
+coordinates(cactus) = ~ East + North
+
+cactus = read.csv(paste0(book_data, "/cactus.csv"), header = T)
+coordinates(cactus) = c("East", "North")
+```
+
+
+## `owin()`
+
+We don't need to bother with the import of the cactus boundaries.
+
+Since we've already imported the cactus data, we can just use its bounding box.
+
+The code is a little bit awkward, but it avoids cluttering up the environment with intermediate variables.
+
+```{r}
+owin(range(cactus$North), range(cactus$East))
+```
+
+
+## `ppp()` from `SpatialPoints*`
+
+Package `maptools` has tools to build `ppp` objects directly from `SpatialPoints*` objects.
+
+We can avoid creating an `owin` object using this method.
+
+```{r}
+require(maptools)
+ppp_cactus = as.ppp(cactus)
+```
+
+
+# Marked Point Patterns - section 4.3.5
+
+
+
+## Cactus data marks
+
+*Chelinidea vittiger* is a herbivore on *O humifusa*, may be a biocontrol agent.
+`ppp` marks can be vectors (for a single mark) or dataframes (for multiple marks).
+
+We want a factor mark to indicate whether or not *C. vittiger* are present.
+
+
+
+## Using `within()` and `with()`)
+
+The function `within()` lets you temporarily work with the columns of a `data.frame` as if they were in the global environment.  It's a little like using functins within the indices of a `data.table`.  It returns a `data.frame` with any additions you made.
+
+`with()` is similar, but it doesn't return the entire `data.frame`
+
+These functions help avoid using temporary variables and can make code more readable by cutting down on subsetting notation.
+
+These functions can do more sophisticated tasks too.
+
+
+
+### `within()` returns a `data.frame`
+
+```{r}
+head(within(
+  marks(ppp_cactus),
+  {
+    ch_pr_ab = factor(chelinidea > 0)
+  }
+))
+
+marks(ppp_cactus) = 
+  within(
+  marks(ppp_cactus),
+  {
+    ch_pr_ab = factor(chelinidea > 0)
+  }
+)
+
+head(marks(ppp_cactus))
+
+```
+
+
+### `with()` returns a vector
+
+```{r}
+ppp_cactus = as.ppp(cactus)
+head(marks(ppp_cactus))
+
+head(with(
+  marks(ppp_cactus),
+  {
+    factor(chelinidea > 0)
+  }
+))
+
+marks(ppp_cactus)$ch_pr_ab = with(
+  marks(ppp_cactus),
+  {
+    factor(chelinidea > 0)
+  }
+)
+
+head(marks(ppp_cactus))
+
+```
+
+
+### Chelinidea presence/absence
+
+I like the `within()` method better:
+
+```{r}
+ppp_cactus = as.ppp(cactus)
+
+marks(ppp_cactus) = 
+  within(
+  marks(ppp_cactus),
+  {
+    ch_pr_ab = factor(chelinidea > 0)
+  }
+)
+```
+
+
+## PPP Summary Statistics
+
+The text shows `split()` to print summary statistics, but this
+doesn't tell us much other than point counts.  You can use 
+`summary(split())` on a `ppp` with multiple marks for more info:
+
+```{r}
+split(ppp_cactus)
+summary(split(ppp_cactus))
+
+```
+
+
+
+# L-Functions
+
+## Univarite *Opuntia*
+
+We can re-do the univariate point pattern analyses using the marked cactus ppp.
+
+`unmark()` strips the marks form a `ppp`.
+
+```{r}
+
+unmark(ppp_cactus)
+
+l_env_cactus = envelope(
+  unmark(ppp_cactus), 
+  fun = Lest,
+  nsim = 99,
+  rank = 1,
+  correction = "iso",
+  global = FALSE,
+  verbose = FALSE)
+
+l_env_cactus_global = envelope(
+  unmark(ppp_cactus), 
+  fun = Lest,
+  nsim = 99,
+  rank = 1,
+  correction = "isotropic",
+  global = TRUE,
+  verbose = FALSE)
+```
+
+Plot to verify that these look the same:
+
+```{r}
+plot(l_env_cactus)
+plot(l_env_cactus, . - r ~ r)
+```
+
+
+
+
+
+
+
+
+
+## L-Function of Insect positions
+
+```{r}
+
+
+l_env_cheli_pr =
+  envelope(
+    subset(ppp_cheli, marks(ppp_cheli) == "presence"),
+    fun = Lest,
+    nsim = 99,
+    rank = 1,
+    correction = "iso",
+    global = FALSE,
+    verbose = FALSE)
+
+
+plot(l_env_cheli_pr, . - r ~ r, legend = FALSE)
+
+```
+
+
+## Bivariate K function
+
+With random-labeling:
+
+```{r}
+
+l_cross = Lcross(ppp_cheli, "presence", "absence")
+plot(l_cross)
+
+l_cross_env_cactus = envelope(
+  ppp_cheli, Lcross,
+  nsim = 99, rank = 1, 
+  I = "absence", global = FALSE, 
+  simulate = expression(rlabel(ppp_cheli)))
+
+
+
+
+
+
+
+
+```
+
+
