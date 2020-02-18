@@ -83,6 +83,7 @@ coordinates(cactus) = ~ East + North
 
 cactus = read.csv(paste0(book_data, "/cactus.csv"), header = T)
 coordinates(cactus) = c("East", "North")
+
 ```
 
 
@@ -148,11 +149,11 @@ head(within(
 
 marks(ppp_cactus) = 
   within(
-  marks(ppp_cactus),
-  {
-    ch_pr_ab = factor(chelinidea > 0)
-  }
-)
+    marks(ppp_cactus),
+    {
+      ch_pr_ab = factor(chelinidea > 0)
+    }
+  )
 
 head(marks(ppp_cactus))
 
@@ -193,11 +194,11 @@ ppp_cactus = as.ppp(cactus)
 
 marks(ppp_cactus) = 
   within(
-  marks(ppp_cactus),
-  {
-    ch_pr_ab = factor(chelinidea > 0)
-  }
-)
+    marks(ppp_cactus),
+    {
+      ch_pr_ab = factor(chelinidea > 0)
+    }
+  )
 ```
 
 
@@ -215,17 +216,17 @@ summary(split(ppp_cactus))
 
 
 
-# L-Functions
+# Univariate L-Functions
 
 ## Univarite *Opuntia*
 
 We can re-do the univariate point pattern analyses using the marked cactus ppp.
 
-`unmark()` strips the marks form a `ppp`.
+`unmark()` strips the marks from a `ppp`.
+
+
 
 ```{r}
-
-unmark(ppp_cactus)
 
 l_env_cactus = envelope(
   unmark(ppp_cactus), 
@@ -234,15 +235,6 @@ l_env_cactus = envelope(
   rank = 1,
   correction = "iso",
   global = FALSE,
-  verbose = FALSE)
-
-l_env_cactus_global = envelope(
-  unmark(ppp_cactus), 
-  fun = Lest,
-  nsim = 99,
-  rank = 1,
-  correction = "isotropic",
-  global = TRUE,
   verbose = FALSE)
 ```
 
@@ -253,57 +245,107 @@ plot(l_env_cactus)
 plot(l_env_cactus, . - r ~ r)
 ```
 
-
-
-
-
-
-
-
-
-## L-Function of Insect positions
+## Univariate insect
 
 ```{r}
 
+l_env_cheli = envelope(
+  unmark(subset(ppp_cactus, ch_pr_ab == "TRUE")),
+  fun = Lest,
+  nsim = 99,
+  rank = 1,
+  correction = "isotropic",
+  global = FALSE,
+  verbose = FALSE)
 
-l_env_cheli_pr =
-  envelope(
-    subset(ppp_cheli, marks(ppp_cheli) == "presence"),
-    fun = Lest,
-    nsim = 99,
-    rank = 1,
-    correction = "iso",
-    global = FALSE,
-    verbose = FALSE)
-
-
-plot(l_env_cheli_pr, . - r ~ r, legend = FALSE)
+plot(l_env_cheli, . - r ~ r, legend = FALSE)
 
 ```
 
 
-## Bivariate K function
+# Bivariate L function
 
 With random-labeling:
 
+I haven't found a function that can strip selected marks from a `ppp` but it probably exists.
+
+For now, I'll make an unmarked `ppp` object to work with.
+
+```{r}
+ppp_cheli = unmark(ppp_cactus)
+marks(ppp_cheli) = marks(ppp_cactus)$ch_pr_ab
+
+l_cross_1 =
+  envelope(
+    ppp_cheli, Lcross,
+    nsim = 99, rank = 1, 
+    i = "FALSE",
+    global = FALSE,
+    simulate = expression(rlabel(ppp_cheli)))
+
+l_cross_2 =
+  envelope(
+    ppp_cheli, Lcross,
+    nsim = 99, rank = 1, 
+    i = "TRUE",
+    global = FALSE,
+    simulate = expression(rlabel(ppp_cheli)))
+
+plot(l_cross_1, . - r ~ r)
+plot(l_cross_2, . - r ~ r)
+
+```
+
+# Mark Correlation Function
+
+
 ```{r}
 
-l_cross = Lcross(ppp_cheli, "presence", "absence")
-plot(l_cross)
+ppp_cactus
+ppp_cactus_area = unmark(ppp_cactus)
+marks(ppp_cactus_area) = marks(ppp_cactus)$Area
 
-l_cross_env_cactus = envelope(
-  ppp_cheli, Lcross,
-  nsim = 99, rank = 1, 
-  I = "absence", global = FALSE, 
-  simulate = expression(rlabel(ppp_cheli)))
+plot(markcorr(ppp_cactus_area))
+
+mcf_env = envelope(
+  ppp_cactus_area,
+  markcorr,
+  nsim = 99,
+  correction = "iso",
+  global = FALSE)
+
+plot(mcf_env, shade = c("hi", "lo"), legend = FALSE)
+
+
+```
+
+# Inhomogeneous Process Models
 
 
 
+```{r}
+ppm_intercept = ppm(unmark(ppp_cactus), ~1)
+ppm_linear    = ppm(unmark(ppp_cactus), ~ x + y)
+ppm_quad      = ppm(unmark(ppp_cactus), ~ polynom(x, y, 2))
 
+ppm_intercept
+ppm_linear
+ppm_quad
+
+plot(ppm_intercept)
+
+str(ppm_intercept, 1)
+
+plot(ppm_linear)
 
 
 
 
 ```
+
+
+# Simulating Point Patterns
+
+
 
 
