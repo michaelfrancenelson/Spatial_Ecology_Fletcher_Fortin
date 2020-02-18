@@ -20,7 +20,6 @@ if (! "here" %in% data.frame(installed.packages())$Package) install.packages("he
 # We don't want maptools for this material:
 # if (! "maptools" %in% data.frame(installed.packages())$Package) install.packages("maptools")
 
-# require(raster)
 # require(rgdal)
 # require(rgeos)
 # require(ggplot2)
@@ -28,6 +27,7 @@ if (! "here" %in% data.frame(installed.packages())$Package) install.packages("he
 require(sp)
 require(spatstat)
 require(here)
+require(raster)
 
 knitr::opts_chunk$set(root.dir = here(), error = TRUE)
 knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = here())
@@ -348,4 +348,27 @@ plot(ppm_linear)
 
 
 
+
+```{r}
+
+as.owin(ppp_cactus)
+rpoispp(
+  lambda = intensity(ppp_cactus), 
+  win = as.owin(ppp_cactus))
+
+
+
+```
+
+
+
+
+
+```{r}
+
+plot(rasterFromXYZ(read.csv(paste0(book_data, "/cactus_matrix.csv"))))
+
+raster(paste0(book_data, "/cactus_matrix.csv"))
+raster(paste0(book_data, "/cactus_matrix"))
+```
 
