@@ -79,7 +79,14 @@ Note:  this is a R function that *does* use side effects!  R conventions aren't 
 
 ```{r prepare data, error = TRUE}
 cactus = read.csv(paste0(book_data, "/cactus.csv"), header = T)
+
+
 coordinates(cactus) = ~ East + North
+
+cactus
+
+names(cactus)
+plot(cactus)
 
 cactus = read.csv(paste0(book_data, "/cactus.csv"), header = T)
 coordinates(cactus) = c("East", "North")
