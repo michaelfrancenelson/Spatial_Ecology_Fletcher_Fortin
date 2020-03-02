@@ -1,8 +1,8 @@
 .btn {
-    border-width: 0 0px 0px 0px;
+    border-width: 0 0 0 0;
     font-weight: normal;
-    text-transform: ;
 }
+
 .btn-default {
     color: #2ecc71;
     background-color: #ffffff;

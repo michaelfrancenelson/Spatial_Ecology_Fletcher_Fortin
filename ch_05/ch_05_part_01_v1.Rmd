@@ -1,0 +1,178 @@
+---
+title: "Chapter 05 part 1"
+author: "Michael France Nelson"
+date: "March, 2020"
+output: 
+  # pdf_document:
+  #   toc: yes
+  html_document:
+    css: !expr here::here("css", "styles.css")
+  # css: ../../css/styles.css
+number_sections: TRUE
+toc: true
+toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require(here)
+require(geoR)
+require(gstat)
+require(pgirmess)
+require(sp)
+# require(ncf)
+
+source(here("/data/environment_vars.R"))
+
+
+
+# require(raster)
+# require(rgdal)
+# require(rgeos)
+# require(spatstat)
+# require(ggplot2)
+
+# knitr::opts_chunk$set(root.dir = here(), error = TRUE)
+# knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = here())
+
+
+```
+
+
+# Correlograms: 5.3.3
+
+<div class="red">
+NOTE: The first line of code in the book reads the data into a `data.frame` called `matrix`.  DO NOT do this!  `matrix` is the name of a function.  R allows you to overwrite a function name in this way, but it is **extremely** bad practice.
+</div>
+
+
+## Import and plot vegetation matrix data
+
+It might be nicer if the data were already in a raster format.
+
+
+
+
+```{r read cactus matrix}
+
+file.exists(paste0(book_data, "cactus_matrix.csv"))
+cactus_matrix = read.csv(paste0(book_data, "cactus_matrix.csv"))
+str(cactus_matrix)
+
+```
+
+
+Here's a way to make it a spatial points object:
+
+```{r cactus matrix data}
+matrix_spdf = cactus_matrix
+coordinates(matrix_spdf) = ~ x + y
+```
+
+
+
+Nice use of the `cut()` function:
+
+```{r plot cactus matrix}
+n_breaks = 17
+cex_mat = 5
+dev.off()
+par(mar = c(0, 0, 0, 0))
+plot(
+  cactus_matrix$x, cactus_matrix$y, 
+  pch = 22, col = 0, cex = cex_mat, asp = 1,
+  bg = gray.colors(n_breaks)[cut(cactus_matrix[, 3], breaks = n_breaks)], 
+  ann = F, axes = F)
+```
+
+
+Using the spatial points object:
+
+```{r plot spdf}
+plot(
+  matrix_spdf, 
+  pch = 22, col = 0, cex = cex_mat, asp = 1,
+  bg = gray.colors(n_breaks)[cut(cactus_matrix[, 3], breaks = n_breaks)], 
+  ann = F, axes = F)
+
+```
+
+
+## Build a distance matrix
+
+We know that the measurements are points on a rectangular grid, spaced 2m apart.
+
+The distances in the distance matrix will be cell-wise distances:
+
+```{r distance matrices}
+
+matrix_dist = dist(cbind(cactus_matrix[, c("x", "y")]))
+maxdist = (2 / 3) * max(matrix_dist)
+
+matrix_dist_sp = spDists(matrix_spdf)
+class(matrix_dist_sp)
+```
+
+
+## Correlogram using package `pgirmess`
+
+
+
+```{r pgirmess correlogram}
+correlog_pgirmess = pgirmess::correlog(
+  coordinates(matrix_spdf), 
+  matrix_spdf$Height, 
+  method = "Moran", 
+  nbclass = 14, 
+  alternative = "two.sided")
+
+class(correlog_pgirmess)
+summary(correlog_pgirmess)
+head(correlog_pgirmess)
+dev.off()
+plot(correlog_pgirmess)
+abline(h = 0, lty = 2)
+
+```
+
+
+## Correlogram with `ncf`
+
+
+```{r ncf correlogram}
+
+correlog_ncf = ncf::correlog(
+  cactus_matrix$x,
+  cactus_matrix$y,
+  cactus_matrix$Height,
+  increment = 5, resamp = 99)
+
+
+correlog_spline = ncf::spline.correlog(
+  cactus_matrix$x,
+  cactus_matrix$y,
+  cactus_matrix$Height,
+  xmax = maxdist,
+  resamp = 100,
+  type = "boot")
+  
+
+```
+
+```{r plot ncf correlograms}
+
+plot(correlog_ncf)
+plot(correlog_spline)
+
+```
+
+```{r}
+str(correlog_pgirmess)
+str(correlog_ncf$correlation, 0)
+str(correlog_spline$real$predicted, 1)
+
+```
+
+
+
