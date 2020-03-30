@@ -17,25 +17,10 @@ require(raster)
 require(here)
 require(psych)
 
-
 source(here("/data/environment_vars.R"))
 
-
-
-# require(rgdal)
-# require(rgeos)
 require(spatstat)
-# require(here)
-# require(ggplot2)
-
-# knitr::opts_chunk$set(root.dir = here(), error = TRUE)
-# knitr::opts_knit$set(echo = TRUE, error = TRUE, root.dir = here())
-
-
-# require(sf)
 require(lulcc)
-
-# require(psych)
 ```
 
 
@@ -103,6 +88,23 @@ icorrelogram <- function(locations, z, binsize, maxdist)
   }
   return(moran.results)
 }
+
+# plotting function
+#
+plot_ff_correlogram = function(cgram, title, subttl = "", thm = theme_light(), ci_lty = 2)
+{
+  require(ggplot2)
+  return(
+    ggplot(cgram, aes(x = dist)) +
+      geom_line(aes(y = Morans.i)) +
+      geom_line(aes(y = null.upper), lty = ci_lty) +
+      geom_line(aes(y = null.lower), lty = ci_lty) +
+      ylab("Moran's I") + xlab("distance") +
+      ggtitle(title, subttl) +
+      geom_hline(yintercept = 0, lty = 3)
+  )
+}
+
 ```
 
 
@@ -349,17 +351,7 @@ VATH.cor
 
 ```{r}
 round(head(VATH.cor, 3), 2)
-
-plot_ff_correlogram(, "Correlogram of Response", "elevation-polynomial model")
-
-with(
-  VATH.cor,
-  matplot(
-    x = dist, y = cbind(Morans.i, null.lower, null.upper),
-    type = "l", lty = c(1, 2, 2), col = 1,
-    xlab = "distance class", ylab = "I", main = "Correlogram of response"
-  ))
-abline(h = 0, lty = "dashed")
+plot_ff_correlogram(VATH.cor, "Correlogram of Response", "elevation-polynomial model")
 ```
 
 
@@ -378,36 +370,6 @@ corr.res <- icorrelogram(
 <div class = "red"> NOTE: same comment as above about error in column names.</div>
 ```{r}
 
-plot_ff_correlogram = function(cgram, title, subtitle = "")
-{
-  require(ggplot2)
-  with(
-    cgram,
-    matplot(
-      x = dist, y = cbind(Morans.i, null.lower, null.upper),
-      type = "l", lty = c(1, 2, 2), col = 1,
-      xlab = "distance class", ylab = "I", 
-      main = paste0(title, "\n", subtitle)
-    ))
-  abline(h = 0, lty = "dashed")
-}
-
-cgram = corr.res
-
-plot_ff_correlogram = function(cgram, title, subttl = "", thm = theme_light(), ci_lty = 2)
-{
-  require(ggplot2)
-  return(
-    ggplot(cgram, aes(x = dist)) +
-      geom_line(aes(y = Morans.i)) +
-      geom_line(aes(y = null.upper), lty = ci_lty) +
-      geom_line(aes(y = null.lower), lty = ci_lty) +
-      ylab("Moran's I") + xlab("distance") +
-      ggtitle(title, subttl) +
-      geom_hline(yintercept = 0, lty = 3)
-  )
-}
-
 plot_ff_correlogram(corr.res, "Correlogram of Residuals", "elevation-polynomial model")
 ```
 
@@ -419,6 +381,8 @@ correlogram on residuals of mean model (intercept model)
 VATH.int <- glm(VATH ~ 1, family = "binomial", data = point.data)
 VATH.int.res <- residuals(VATH.int, type = "deviance")
 corr.int.res <- icorrelogram(locations = coords, z = VATH.int.res, binsize = 1000, maxdist = 15000)
+
+plot_ff_correlogram(corr.int.res, "Correlogram of Residuals", "intercept-only model")
 ```
 
 correlation
@@ -455,10 +419,12 @@ summary(VATH.sub)
 
 extract coefficients
 ```{r}
-glmsub.summary <- c(summary(VATH.sub)$coef[2, 1], 
-                    summary(VATH.sub)$coef[2, 2], 
-                    summary(VATH.sub)$coef[3, 1], 
-                    summary(VATH.sub)$coef[3, 2])
+glmsub.summary <- 
+  c(
+    summary(VATH.sub)$coef[2, 1], 
+    summary(VATH.sub)$coef[2, 2], 
+    summary(VATH.sub)$coef[3, 1], 
+    summary(VATH.sub)$coef[3, 2])
 ```
 
 residuals
@@ -466,20 +432,5 @@ residuals
 ```{r}
 VATH.sub.res <- residuals(VATH.sub, type = "deviance")
 corr.sub.res <- icorrelogram(locations = coords.sub, z = VATH.sub.res, binsize = 2000, maxdist = 15000)
+plot_ff_correlogram(corr.sub.res, "Correlogram of Residuals", "spaced-sample model")
 ```
-
-#plot correlogram
-
-plot(corr.sub.res$dist, corr.sub.res$Morans.i, ylim = c(-0.5, 0.5))
-abline(h = 0, lty = "dashed")
-lines(corr.sub.res$dist, corr.sub.res$null.lcl)
-lines(corr.sub.res$dist, corr.sub.res$null.ucl)
-
-
-
-
-#-------------------------------------------#
-#Subset data to account for autocorrelation
-#-------------------------------------------#
-
-
