@@ -11,27 +11,135 @@ output:
     toc_float: true
 ---
 
-```{r setup, include = FALSE, echo = FALSE}
 
+# Setup the R session
+
+## Packages, environment
+```{r setup R session, echo = FALSE}
 require(here)
+
+require(data.table)
+
 require(stars)
 require(sf)
-require(ggplot2)
-require(viridis)
-require(spData)
+
 require(raster)
-require(cowplot)
 require(sp)
+
+require(ggplot2)
+require(cowplot)
+
+require(psych)
+
+require(spdep)
 
 source(here("/data/environment_vars.R"))
 
-# require(raster)
-# require(psych)
+
+# CRS for the raster and point data
+crs_dat = "+proj=aea +lat_1=46 +lat_2=48 +lat_0=44 +lon_0=-109.5 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 
 
 # require(spatstat)
+# require(viridis)
+# require(spData)
+# require(sp)
 # require(lulcc)
 ```
+
+## Graphical params
+
+```{r}
+
+
+
+```
+
+## Fletcher and Fortin's Correlogram
+
+The function provided in the book/supplemental code didn't work for me, so here's my corrected version:
+
+```{r}
+
+if(FALSE)
+{
+  
+}
+ff_correlogram <- function(
+  point_coords, 
+  point_data,
+  bin_size = NULL,
+  maxdist = NULL)
+{
+  # package 'spdep' needed for dnearneigh() function.
+  # Check whether it is installed:
+  stopifnot(require(spdep))
+  
+  # Set up the distance bins
+  dist_bins <- seq(0, maxdist, by = bin_size)
+  n_bins <- length(dist_bins) - 1
+  
+  
+  # container for results
+  moran.results <- data.frame(
+    dist =  rep(NA, Nbin),
+    model_I = NA,
+    null_i_lower = NA, 
+    null_i_upper = NA)
+  
+  for (i in 1:n_bins)
+  {
+    d_lower <- dist_bins[i] 
+    d_upper <- dist_bins[i+1]
+    
+    neigh <- 
+      spdep::dnearneigh(
+        x = locations, 
+        d1 = d_lower,
+        d2 = d_upper, 
+        longlat = F)
+    
+    wts <- 
+      nb2listw(
+        neighbours = neigh, 
+        style = 'B', 
+        zero.policy = T)
+    
+    #note alternative is for P-value, so only 'significant if positive autocorrelation
+    mor.i <- 
+      moran.mc(
+        x = z, 
+        listw = wts, 
+        nsim = 200, 
+        alternative = "greater", 
+        zero.policy = T) 
+    
+    moran.results[i, "dist"] <- (d.end+d.start)/2 
+    
+    #observed moran's i
+    moran.results[i, "Morans.i"] <- mor.i$statistic 								                
+    
+    moran.results[i, "null.lower"] <- 
+      quantile(
+        mor.i$res, 
+        probs = 0.025, 
+        na.rm = T)#95% null envelope	
+    
+    moran.results[i, "null.upper"] <- 
+      quantile(
+        mor.i$res, 
+        probs = 0.975, 
+        na.rm = T) #95% null envelope
+  }
+  return(moran.results)
+}
+
+```
+
+
+
+
+
 
 # Introduction and Overview
 
@@ -40,27 +148,132 @@ This is a walkthroug of a spatial analysis workflow, based of section **6.3.3: M
 
 I use data and modelling ideas from their text, with additional explanations and 
 
+
+- I'm going to use the **Simple Features** ecosystem of R spatial tools in this walkthrough.
+- I'm going to use the `ggplot` plotting methods, for the most part.
+- I'm going to use pipes when appropriate:
+- I like to keep the envirnoment free of intermediate variables.
+- They aren't always the easiest option, but they can make code much more compact and elegant.
+- pipes info at <a href="https://cfss.uchicago.edu/notes/pipes/">University of Chicago</a>
+
+
 # Data: Import and setup
 
 Some notes on the book data/code.
 
-- I'm going to use the **Simple Features** ecosystem of R spatial tools in this walkthrough.
-- I'm goint to use the `ggplot` plotting methods, for the most part.
 - There are a number of errata in the code provided by the authors, both in the main text and the supplemental code.
-    - I'll attempt to point out where I found issues and offer my corrections.
-    
-    
-## Elevation data
+- I'll attempt to point out where I found issues and offer my corrections.
 
-### Errata:
+
+
+## Errata:
 
 - The authors' elevation raster files don't include projection information.
-    - The code in the text doesn't include projection info.
-    - The projection specification is found in the supplemental code.
-    
+- The code in the text doesn't include projection info.
+- The projection specification is found in the supplemental code.
+
+## Elevation data
+
+I'm initially reading the raster with `raster()` rather than the stars.  
+I'm sure there's a stars-friendly pre-built terrain function, but I haven't found it yet.
+
+
+### Read data
+```{r}
+dem = raster(file.path(book_data, "elev"))
+proj4string(dem) = crs_dat
+```
+
+### Build terrain covariates
+```{r}
+terrain_brick = brick(dem, terrain(dem, opt = c("slope", "aspect"), unit = "radians"))
+
+# brick appends '_km' to the elevetaion layer name:
+names(terrain_brick)
+```
+
+
+### Create `stars` raster stack
+```{r}
+terrain_stars = st_as_stars(terrain_brick)
+```
+
+
+## Bird data
+
+### Using data.table
+
+I prefer opening tabular data files with `data.table`, it 'just works' much more often than `read.csv()`.
 
 ```{r}
+thrush_dt <- 
+  fread(file.path(book_data, "vath_2004.csv"), header = TRUE)
 
+thrush_sf = st_as_sf(
+  thrush_dt,
+  coords = c("NORTHING", "EASTING"), 
+  crs = crs_dat)
+```
+
+I have been unsuccessful at finding a way to easily extract values from a stars raster brick given point coordinates.
+
+This method uses 
+
+```{r, echo = FALSE, include=FALSE}
+head(thrush_sf)
+
+
+as("RasterBrick", terrain_stars)
+
+as("SpatialPoints", st_coordinates(thrush_sf))
+
+extract(terrain_brick, SpatialPoints(st_coordinates(thrush_sf), proj4string = CRS(crs_dat)))
+
+st_as_sf()
+
+extract(terrain_brick, head(st_coordinates(thrush_sf)))
+
+coords = thrush_dt[, .(x = EASTING, y = NORTHING)]
+
+extract(terrain_brick, head(coords))
+
+plot(subset(terrain_brick, 1))
+
+thrush_sf = cbind(thrush_sf, extract(terrain_brick, coords))
+
+head(st_coordinates(thrush_sf))
+class(st_coordinates(thrush_sf))
+
+coordinates(thrush_sf$geometry)
+xxx = extract(terrain_brick, st_coordinates(thrush_sf))
+terrain_brick
+thrush_sf
+
+head(xxx)
+
+
+xxx = aggregate(terrain_stars, thrush_sf, function(x) x[1], as_points = TRUE)
+str(xxx)
+
+
+st_intersection()
+st_sample()
+
+```
+
+
+# Data: Numerical and graphical exploration
+
+### Summary
+
+
+### Histograms
+```{r}
+ggplot(
+  aggregate(VATH ~ TRANSECT, data = thrush_dt, sum), aes(x = VATH)) + 
+  geom_histogram(binwidth = 1, color="black", fill = "steelblue", alpha = 0.2) +
+  labs(title = "Varied Thrush Census", subtitle = "Counts aggregated by transect") +
+    xlab("Census Count")
 
 ```
 
@@ -69,7 +282,48 @@ Some notes on the book data/code.
 
 
 
-# Data: Numerical and graphical summaries
+
+```{r}
+
+thrush_dt[,hist(
+    by(VATH, TRANSECT, sum),
+    main = "Varied Thrush Count Per Transect",
+    xlab = "Census Count")]
+
+
+ggplot(aggregate(VATH ~ TRANSECT, data = thrush_dt, sum), aes(x = VATH)) + geom_histogram(binwidth = 1, fill = gray(0, 0.5), col = "green")
+
+ggplot(thrush_dt) + geom_histogram(data = by(VATH, TRANSECT, sum))
+
+pdf(file.path(fig_dir, "varied_thrush_transect_count_hist.pdf"), width = 7, height = 4)
+with(thrush_sf, {
+  hist(
+    by(VATH, TRANSECT, sum),
+    main = "Varied Thrush Count Per Transect",
+    xlab = "Census Count")
+})
+dev.off()
+
+pdf(file.path(fig_dir, "varied_thrush_transect_data.pdf"), width = 12, height = 2)
+grid.table(head(point.data))
+dev.off()
+
+summary(point.data[, c(4, 7:9)])
+{
+  pdf(file.path(fig_dir, "varied_thrush_transect_terrain_hist.pdf"), width = 8, height = 7)
+  par(mfrow = c(3, 1))
+  hist(point.data[, c(7)], main = "Elevation at sample sites", xlab = "elevation (km)")
+  hist(point.data[, c(8)], main = "Slope at sample sites", xlab = "elevation (km)")
+  hist(point.data[, c(9)], main = "Aspect at sample sites", xlab = "elevation (km)")
+  dev.off()
+}
+
+
+
+```
+
+
+
 
 
 # Data: Exploratory maps
@@ -122,38 +376,38 @@ gg_rast_gs = ggplot() +
 
 # Elevation/Terrain Data
 ```{r}
- dem_crs_m = "+proj=aea +lat_1=46 +lat_2=48 +lat_0=44 +lon_0=-109.5 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
-  
-  dem = raster(file.path(book_data, "elev"))
-  proj4string(dem) = dem_crs_m
-  
-  dem_m = dem
-  dem_m[] = dem[] * 1e3
-  
-  dat_brick = brick(dem_m, terrain(dem_m, opt = c("slope", "aspect"), unit = "radians"))
-  names(dat_brick)[1] = "elevation"
-  dat_stars = st_as_stars(dat_brick)
-  
-  rm(dem, dem_m) 
+dem_crs_m = "+proj=aea +lat_1=46 +lat_2=48 +lat_0=44 +lon_0=-109.5 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+
+dem = raster(file.path(book_data, "elev"))
+proj4string(dem) = dem_crs_m
+
+dem_m = dem
+dem_m[] = dem[] * 1e3
+
+dat_brick = brick(dem_m, terrain(dem_m, opt = c("slope", "aspect"), unit = "radians"))
+names(dat_brick)[1] = "elevation"
+dat_stars = st_as_stars(dat_brick)
+
+rm(dem, dem_m) 
 ```
 
 # Thrush Data
 
 ```{r}
 thrush_pts <- read.csv(file.path(book_data, "vath_2004.csv"), header = TRUE)
-  
-  thrush_pts = 
-    within(thrush_pts,
-           {
-             census = factor(VATH)
-             levels(census) = c("absent", "present")
-           }
-    )
-  head(thrush_pts)
-  coordinates(thrush_pts) = ~ EASTING + NORTHING
-  proj4string(thrush_pts) = dem_crs_m
-  
-  thrush_sf = st_as_sf(thrush_pts)
+
+thrush_pts = 
+  within(thrush_pts,
+         {
+           census = factor(VATH)
+           levels(census) = c("absent", "present")
+         }
+  )
+head(thrush_pts)
+coordinates(thrush_pts) = ~ EASTING + NORTHING
+proj4string(thrush_pts) = dem_crs_m
+
+thrush_sf = st_as_sf(thrush_pts)
 ```
 
 
