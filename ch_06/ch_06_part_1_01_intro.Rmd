@@ -1,0 +1,46 @@
+# Introduction and Overview {.tabset}
+
+This is a walkthroug of a spatial analysis workflow, based of section **6.3.3: Models that Ignore Spatial Dependence** in
+
+> Fletcher, Robert; Fortin, Marie-Josée. Spatial Ecology and Conservation Modeling
+
+I use data and modelling ideas from their text, with additional explanations and 
+
+- I'm going to use the **Simple Features** ecosystem of R spatial tools in this walkthrough.
+- I'm going to use the `ggplot` plotting methods, for the most part.
+- I'm going to use pipe operator `%>%` when appropriate:
+    - I like to keep the envirnoment free of intermediate variables.
+    - Pipes aren't always the best option, but sometimes they make code much more compact and elegant.
+    - pipes info at <a href="https://cfss.uchicago.edu/notes/pipes/">University of Chicago</a>
+    
+    
+
+## The data
+
+Surveys for the varied thrush: *Ixoreus naevius*
+
+- Sampling scheme:
+- ~3km transects
+- point surveys - 100m radius
+- 10 pts/transect
+
+
+
+
+## Errata
+
+There are a number of errata in the code provided by the authors, both in the main text and the supplemental code.
+I'll attempt to point out where I found issues and offer my corrections.
+
+### general
+
+- The authors' elevation raster files don't include projection information.
+- The code in the text doesn't include projection info.
+- The projection specification is found in the supplemental code.
+
+### correlogram function
+
+There is a mistake in the definition of the `moran.results` data frame:
+
+They define two columns called `null.lower`, however one of them should have been `null.upper`
+    

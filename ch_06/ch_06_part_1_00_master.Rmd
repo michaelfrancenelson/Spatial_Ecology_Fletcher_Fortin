@@ -1,0 +1,50 @@
+---
+title: "Fletcher and Fortin, Chapter 6"
+subtitle: "Varied Thrush Example Walkthrough"
+output: 
+  # pdf_document:
+    # toc: yes
+  html_document:
+    css: !expr here::here("css", "styles.css")
+    number_sections: TRUE
+    toc: true
+    toc_float: true
+---
+
+<script src="`r here::here("css", "folding.js")`"></script>
+
+```{r setup, include = FALSE, echo = FALSE}
+if(!require("remotes")) install.packages("remotes")
+if(!require("kilppy")) remotes::install_github("rlesur/klippy")
+
+require(kilppy)
+require(here)
+
+source(here("/data/environment_vars.R"))
+```
+
+```{r, include=FALSE}
+knitr::read_chunk(here("ch_06", "ch_06_code.R"))
+source(here("ch_06", "ch_06_code.R"))
+
+```
+
+
+
+```{r child = 'ch_06_part_1_01_intro.Rmd'}
+```
+
+```{r child = 'ch_06_part_1_02_data_prep.Rmd', cache=TRUE}
+```
+
+```{r child = 'ch_06_part_1_03_data_exploration.Rmd'}
+```
+
+```{r child = 'ch_06_part_1_04_models_1.Rmd'}
+```
+
+
+
+
+
+

@@ -1,0 +1,16 @@
+base
+remotes
+here
+data.table
+abind
+sf
+stars
+sp
+raster
+ggplot2
+cowplot
+viridisLite
+viridis
+psych
+spData
+spdep

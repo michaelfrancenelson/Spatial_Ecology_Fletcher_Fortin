@@ -1,0 +1,90 @@
+
+
+
+```{r packages, echo=FALSE}
+{
+  require(here)
+  require(stars)
+  require(sf)
+  require(ggplot2)
+  require(viridis)
+  require(spData)
+  require(raster)
+  require(cowplot)
+  require(sp)
+  
+  source(here("/data/environment_vars.R"))
+  
+  dem_crs_m = "+proj=aea +lat_1=46 +lat_2=48 +lat_0=44 +lon_0=-109.5 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+}
+```
+
+
+
+
+# Data: Import and setup
+
+Some notes on the book data/code.
+
+- There are a number of errata in the code provided by the authors, both in the main text and the supplemental code.
+- I'll attempt to point out where I found issues and offer my corrections.
+
+
+
+## Errata:
+
+- The authors' elevation raster files don't include projection information.
+- The code in the text doesn't include projection info.
+- The projection specification is found in the supplemental code.
+
+## Elevation data
+
+I'm initially reading the raster with `raster()` rather than the stars.  
+I'm sure there's a stars-friendly pre-built terrain function, but I haven't found it yet.
+
+
+### Read data
+
+
+# Varied Thrush data ----
+{
+  thrush_pts <- read.csv(file.path(book_data, "vath_2004.csv"), header = TRUE)
+  
+  thrush_pts = 
+    within(thrush_pts,
+           {
+             census = factor(VATH)
+             levels(census) = c("absent", "present")
+           }
+    )
+  
+  head(thrush_pts)
+  coordinates(thrush_pts) = ~ EASTING + NORTHING
+  proj4string(thrush_pts) = dem_crs_m
+  
+  thrush_sf = st_as_sf(thrush_pts)
+}
+
+# Raster elevation data ----
+{
+  dem_crs_m = "+proj=aea +lat_1=46 +lat_2=48 +lat_0=44 +lon_0=-109.5 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+  dem = raster(file.path(book_data, "elev"))
+  proj4string(dem) = dem_crs_m
+  
+  dem_m = dem
+  dem_m[] = dem[] * 1e3
+  
+  dat_brick = brick(dem_m, terrain(dem_m, opt = c("slope", "aspect"), unit = "radians"))
+  names(dat_brick)[1] = "elevation"
+  dat_stars = st_as_stars(dat_brick)
+  
+  rm(dem, dem_m) 
+  
+  r_t = raster(extent(dat_brick), resolution = 5000)
+  dat_rs = resample(dat_brick, raster(extent(dat_brick), resolution = 5000))
+  
+  dat_rs_stars = st_as_stars(dat_rs)
+}
+
+
+

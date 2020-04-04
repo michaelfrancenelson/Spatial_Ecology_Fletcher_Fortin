@@ -1,0 +1,83 @@
+# Data: Numerical and graphical exploration {.tabset}
+
+## Summary Stats
+
+
+A summary of the data columns:
+```{r}
+summary(thrush_sf)
+```
+
+Most of them aren't especially informative, but the `VATH` columns tells us that the mean number of thrushes observed was only 0.118.
+```{r}
+summary(thrush_sf$VATH)
+```
+There is a pretty big range of elvations in the sample sites:
+```{r}
+range(thrush_sf$elevation)
+```
+Some graphical summaries may be more informative.
+
+
+## Pairplots
+
+We can look to see if any of the terrain variables are correlated:
+
+```{r covariate pair plot}
+```
+
+
+
+## Histograms
+
+### Count per transect
+```{r, echo = FALSE}
+print(g_hist_census)
+```
+
+
+### Terrain Histograms
+```{r, echo = FALSE}
+plot_grid(g_hist_elev, g_hist_slope, g_hist_aspect, ncol = 1)
+# 
+# gm_hist_thrush = ggplot(thrush_sf) + gm_thrush_hist_2
+# g_hist_elev = 
+#   gm_hist_thrush + aes(x = elev) +
+#   ggtitle("Sample Point Terrain: Elevation") + 
+#   xlab("Elevation (m)")
+# 
+# g_hist_slope = 
+#   gm_hist_thrush +  aes(x = slope) +
+#   ggtitle("Sample Point Terrain: Slope") + 
+#   xlab("Slope (m / km)")
+# 
+# g_hist_aspect = 
+#   gm_hist_thrush + aes(x = aspect) + 
+#   ggtitle("Sample Point Terrain: Aspect") + 
+#   xlab("Aspect (radians)")
+
+```
+
+### Conditional terrain histograms
+
+Are the distributions of the terrain variables similar at sites with and without thrushes?
+
+```{r}
+plot_grid(g_hist_elev_present, g_hist_elev_absent, nrow = 1)
+
+# 
+# gm_hist_thrush_present = ggplot(subset(thrush_sf, VATH == 1)) + gm_thrush_hist_3
+# gm_hist_thrush_absent = ggplot(subset(thrush_sf, VATH == 0)) + gm_thrush_hist_3
+# 
+# g_hist_elev_present = 
+#   gm_hist_thrush_present + aes(x = elev) +
+#   ggtitle("Sample Point Elevation: Present") + 
+#   xlab("Elevation (m)")
+# 
+# g_hist_elev_absent = 
+#   gm_hist_thrush_absent + aes(x = elev) +
+#   ggtitle("Sample Point Elevation: Absent") + 
+#   xlab("Elevation (m)")
+# 
+# plot_grid(g_hist_elev_present, g_hist_elev_absent, nrow = 1)
+```
