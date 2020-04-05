@@ -14,28 +14,34 @@ output:
 <script src="`r here::here("css", "folding.js")`"></script>
 
 ```{r setup, include = FALSE, echo = FALSE}
-if(!require("remotes")) install.packages("remotes")
-if(!require("kilppy")) remotes::install_github("rlesur/klippy")
 
 require(kilppy)
 require(here)
 
-source(here("/data/environment_vars.R"))
-```
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
-```{r, include=FALSE}
-knitr::read_chunk(here("ch_06", "ch_06_code.R"))
-source(here("ch_06", "ch_06_code.R"))
+
+knitr::read_chunk("ch_06_code.R")
 
 ```
 
 
 
-```{r child = 'ch_06_part_1_01_intro.Rmd'}
+<!-- ```{r child = 'ch_06_part_1_01_intro.Rmd'} -->
+<!-- ``` -->
+
+
+```{r child = 'ch_06_part_1_02_data_prep_1.Rmd', cache=FALSE}
 ```
 
-```{r child = 'ch_06_part_1_02_data_prep.Rmd', cache=TRUE}
+
+```{r child = 'ch_06_part_1_02_data_prep_2.Rmd', cache=FALSE}
 ```
+
+
+```{r child = 'ch_06_part_1_02_data_prep_3.Rmd', cache=FALSE}
+```
+
 
 ```{r child = 'ch_06_part_1_03_data_exploration.Rmd'}
 ```

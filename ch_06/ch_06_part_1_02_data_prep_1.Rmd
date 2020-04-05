@@ -1,0 +1,57 @@
+# Data {.tabset}
+
+## Packges, environment
+
+Packages used in this walkthrough.
+
+<div class="warn"> Note:  I use `here()` in conjunction with the file path to the F&F data on my computer. You'll need to tell R where to look for the data on your machine. </div>
+
+
+<div class="fold s">
+```{r packages, results = "hide", warning = FALSE}
+```
+</div>
+
+
+
+## Elevation data
+
+I'm initially reading the raster with `raster()` rather than the stars.
+I'm sure there's a stars-friendly pre-built terrain function, but I haven't found it yet.
+
+You can use `terrain_brick()` from package `raster` to calculate slope and aspect.
+
+Finally, group everythign into a multilayer raster `stars` object.
+
+<div class="fold s">
+```{r elevation_data, results = "hide", warning = FALSE}
+```
+</div>
+
+
+
+
+## Varied Thrush Data
+
+- I prefer opening tabular data files with `data.table`, it 'just works' much more often than `read.csv()`.
+- You can make a `sf` object from a `data.frame` or `data.table` with `st_as_sf()`
+- I have been unsuccessful at finding a quick way to extract values from a stars raster brick given point coordinates.
+    - This code uses `extract()` on the `RasterBrick` version of the data to add terrain info to the thrush data.
+
+<div class="fold s">
+```{r varied_thrush_data, results = "hide", warning = FALSE}
+```
+</div>
+
+
+
+
+## Center data
+
+The authors centered and scaled, i.e. a z-transfomation, for the modeling.  The resulting
+centered/scaled variables have mean 0 and variance 1.
+
+```{r center_data, results = 'hide', warning = FALSE}
+```
+
+

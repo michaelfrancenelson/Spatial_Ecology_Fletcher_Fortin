@@ -2,82 +2,66 @@
 
 ## Summary Stats
 
-
 A summary of the data columns:
+<div class="fold o">
 ```{r}
 summary(thrush_sf)
 ```
+</div>
 
-Most of them aren't especially informative, but the `VATH` columns tells us that the mean number of thrushes observed was only 0.118.
+
+That's a lot of info, most of which isn't especially helpful for our purposes.
+
+The `count` column tells us that the mean number of thrushes observed was only 0.118.
 ```{r}
-summary(thrush_sf$VATH)
+summary(thrush_sf$count)
 ```
+
+
 There is a pretty big range of elvations in the sample sites:
 ```{r}
 range(thrush_sf$elevation)
 ```
-Some graphical summaries may be more informative.
 
-
-## Pairplots
-
-We can look to see if any of the terrain variables are correlated:
-
-```{r covariate pair plot}
-```
+Some graphical summaries will be informative.
 
 
 
 ## Histograms
 
 ### Count per transect
+
+A histogram of the number of thrushes observed per **transect**.  Remember that there were multiple **sample points** along each transect.
 ```{r, echo = FALSE}
 print(g_hist_census)
 ```
 
 
 ### Terrain Histograms
+
+How are the terrain covariates distributed among the sample point locations?
+
 ```{r, echo = FALSE}
 plot_grid(g_hist_elev, g_hist_slope, g_hist_aspect, ncol = 1)
-# 
-# gm_hist_thrush = ggplot(thrush_sf) + gm_thrush_hist_2
-# g_hist_elev = 
-#   gm_hist_thrush + aes(x = elev) +
-#   ggtitle("Sample Point Terrain: Elevation") + 
-#   xlab("Elevation (m)")
-# 
-# g_hist_slope = 
-#   gm_hist_thrush +  aes(x = slope) +
-#   ggtitle("Sample Point Terrain: Slope") + 
-#   xlab("Slope (m / km)")
-# 
-# g_hist_aspect = 
-#   gm_hist_thrush + aes(x = aspect) + 
-#   ggtitle("Sample Point Terrain: Aspect") + 
-#   xlab("Aspect (radians)")
-
 ```
+
+
 
 ### Conditional terrain histograms
 
-Are the distributions of the terrain variables similar at sites with and without thrushes?
+Are the distributions of the terrain variables similar at sampling points where thrushes were **present** and **absent**?
 
 ```{r}
 plot_grid(g_hist_elev_present, g_hist_elev_absent, nrow = 1)
-
-# 
-# gm_hist_thrush_present = ggplot(subset(thrush_sf, VATH == 1)) + gm_thrush_hist_3
-# gm_hist_thrush_absent = ggplot(subset(thrush_sf, VATH == 0)) + gm_thrush_hist_3
-# 
-# g_hist_elev_present = 
-#   gm_hist_thrush_present + aes(x = elev) +
-#   ggtitle("Sample Point Elevation: Present") + 
-#   xlab("Elevation (m)")
-# 
-# g_hist_elev_absent = 
-#   gm_hist_thrush_absent + aes(x = elev) +
-#   ggtitle("Sample Point Elevation: Absent") + 
-#   xlab("Elevation (m)")
-# 
-# plot_grid(g_hist_elev_present, g_hist_elev_absent, nrow = 1)
 ```
+
+
+
+
+## Pairplots
+
+We can look to see if any of the terrain variables are correlated:
+
+```{r covariate_pair_plot}
+```
+

@@ -1,0 +1,651 @@
+---
+title: "Fletcher and Fortin, Chapter 6"
+subtitle: "Varied Thrush Example Walkthrough"
+output: 
+  # pdf_document:
+    # toc: yes
+  html_document:
+    css: !expr here::here("css", "styles.css")
+    number_sections: TRUE
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include = FALSE, echo = FALSE}
+
+require(here)
+require(stars)
+require(sf)
+require(ggplot2)
+require(viridis)
+require(spData)
+require(raster)
+require(cowplot)
+require(sp)
+
+source(here("/data/environment_vars.R"))
+
+# require(raster)
+# require(psych)
+
+
+# require(spatstat)
+# require(lulcc)
+```
+
+
+# Data and helper functions
+
+```{r ggplot graphics objects}
+gg_rast = ggplot() + 
+  coord_equal() + 
+  scale_fill_viridis(
+    na.value = "transparent",
+    guide = 
+      guide_colorbar(
+        title.position = "top",
+        barwidth = unit(0.6, "npc"))) + 
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme_map() +
+  theme(
+    legend.position = "bottom", 
+    legend.direction = "horizontal",
+    axis.title = element_blank())
+
+gg_rast_gs = ggplot() + 
+  coord_equal() + 
+  scale_fill_viridis_c(
+    na.value = "transparent",
+    guide = 
+      guide_colorbar(
+        title.position = "top",
+        barwidth = unit(0.6, "npc"))) + 
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  theme_map() +
+  theme(
+    legend.position = "bottom", 
+    legend.direction = "horizontal",
+    axis.title = element_blank())
+
+
+```
+
+# Elevation/Terrain Data
+```{r}
+ dem_crs_m = "+proj=aea +lat_1=46 +lat_2=48 +lat_0=44 +lon_0=-109.5 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+  
+  dem = raster(file.path(book_data, "elev"))
+  proj4string(dem) = dem_crs_m
+  
+  dem_m = dem
+  dem_m[] = dem[] * 1e3
+  
+  dat_brick = brick(dem_m, terrain(dem_m, opt = c("slope", "aspect"), unit = "radians"))
+  names(dat_brick)[1] = "elevation"
+  dat_stars = st_as_stars(dat_brick)
+  
+  rm(dem, dem_m) 
+```
+
+# Thrush Data
+
+```{r}
+thrush_pts <- read.csv(file.path(book_data, "vath_2004.csv"), header = TRUE)
+  
+  thrush_pts = 
+    within(thrush_pts,
+           {
+             census = factor(VATH)
+             levels(census) = c("absent", "present")
+           }
+    )
+  head(thrush_pts)
+  coordinates(thrush_pts) = ~ EASTING + NORTHING
+  proj4string(thrush_pts) = dem_crs_m
+  
+  thrush_sf = st_as_sf(thrush_pts)
+```
+
+
+
+
+
+
+## Elevation/terrain data
+```{r data import}
+
+dem_crs_m = "+proj=aea +lat_1=46 +lat_2=48 +lat_0=44 +lon_0=-109.5 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
+
+dem = raster(file.path(book_data, "elev"))
+proj4string(dem) = dem_crs_m
+```
+
+The book's supplied raster file has elevation in km, but it's easier to work with meters.
+```{r}
+
+dem_m = dem
+dem_m[] = dem[] * 1e3
+
+dat_terrain = brick(dem_m, terrain(dem_m, opt = c("slope", "aspect"), unit = "radians"))
+names(dat_terrain)[1] = "elevation"
+dat_rast = st_as_stars(dat_terrain)
+
+dat_rast[, , 1]
+
+g_elev = gg_rast + geom_stars(data = dat_rast[, , , 1]) + labs(fill = "Elevation")
+g_slop = gg_rast + geom_stars(data = dat_rast[, , , 2]) + labs(fill = "Slope")
+g_aspt = gg_rast + geom_stars(data = dat_rast[, , , 3]) + labs(fill = "Aspect")
+
+```
+
+## Plot terrain
+```{r}
+
+if(FALSE)
+{
+  
+  map_width = 6.5
+  map_height = 8
+  map_res = 250
+  png(file.path(fig_dir, "thrush_elevation.png"), 
+      width = map_width, height = map_height, units = "in", res = map_res)
+  print(g_elev)
+  dev.off()
+  
+  png(file.path(fig_dir, "thrush_aspect.png"), 
+      width = map_width, height = map_height, units = "in", res = map_res)
+  print(g_aspt)
+  dev.off()
+  
+  png(file.path(fig_dir, "thrush_slope.png"),
+      width = map_width, height = map_height, units = "in", res = map_res)
+  print(g_slop)
+  dev.off()
+  
+  png(file.path(fig_dir, "thrush_terrain.png"), 
+      width = 3 * map_width, height = map_height, units = "in", res = map_res)
+  print(plot_grid(g_elev, g_slop, g_aspt, nrow = 1))
+  dev.off()
+}
+
+```
+
+
+## Thrush data
+
+
+```{r}
+thrush_pts <- read.csv(file.path(book_data, "vath_2004.csv"), header = TRUE)
+
+thrush_pts = 
+  within(thrush_pts,
+         {
+           `census` = factor(VATH)
+           levels(census) = c("absent", "present")
+         }
+  )
+head(thrush_pts)
+plot(x = EASTING, y = NORTHING, data = thrush_pts)
+
+with(thrush_pts,
+     
+     plot(NORTHING, EASTING)
+)
+
+locator(2)
+
+coordinates(thrush_pts) = ~ EASTING + NORTHING
+proj4string(thrush_pts) = dem_crs_m
+plot(thrush_pts)
+
+
+thrush_sf = st_as_sf(thrush_pts)
+
+```
+
+
+
+
+
+# Overview
+
+F + F use example data from the **Northern Region Landbird Monitoring Program**.
+> Hutto RL, Young JS (2002) Regional landbird monitoring: perspectives from the Northern Rocky Mountains. Wildl Soc Bull 30( 3): 738– 750
+
+
+## The data
+
+Surveys for the varied thrush: *Ixoreus naevius*
+
+- Sampling scheme:
+- ~3km transects
+- point surveys - 100m radius
+- 10 pts/transect
+
+## Authors' correlogram function
+
+Note that there is a mistake in the definition of the `moran.results` data frame.
+
+They define two columns called `null.lower`, however one of them should have been `null.upper`
+
+```{r}
+icorrelogram <- function(locations, z, binsize, maxdist)
+{
+  # package 'spdep' needed for dnearneigh() function.
+  # Check whether it is installed:
+  stopifnot(require(spdep))
+  
+  distbin <- seq(0, maxdist, by = binsize)
+  Nbin <- length(distbin)-1
+  
+  moran.results <- data.frame(
+    "dist" =  rep(NA, Nbin), 
+    "Morans.i" = NA, 
+    "null.lower" = NA, 
+    "null.upper" = NA)
+  
+  for (i in 1:Nbin){
+    d.start <- distbin[i] 
+    d.end <- distbin[i+1]
+    
+    neigh <- spdep::dnearneigh(
+      x = locations, 
+      d1 = d.start, 
+      d.end, 
+      longlat = F)
+    
+    wts <- nb2listw(
+      neighbours = neigh, 
+      style = 'B', 
+      zero.policy = T)
+    
+    #note alternative is for P-value, so only 'significant if positive autocorrelation
+    mor.i <- moran.mc(
+      x = z, listw = wts, 
+      nsim = 200, 
+      alternative = "greater", 
+      zero.policy = T) 
+    
+    moran.results[i, "dist"] <- (d.end+d.start)/2 
+    
+    #observed moran's i
+    moran.results[i, "Morans.i"] <- mor.i$statistic 								                
+    
+    moran.results[i, "null.lower"] <- 
+      quantile(
+        mor.i$res, 
+        probs = 0.025, 
+        na.rm = T)#95% null envelope	
+    
+    moran.results[i, "null.upper"] <- 
+      quantile(
+        mor.i$res, 
+        probs = 0.975, 
+        na.rm = T) #95% null envelope
+  }
+  return(moran.results)
+}
+
+# plotting function
+#
+plot_ff_correlogram = function(cgram, title, subttl = "", thm = theme_light(), ci_lty = 2)
+{
+  require(ggplot2)
+  return(
+    ggplot(cgram, aes(x = dist)) +
+      geom_line(aes(y = Morans.i)) +
+      geom_line(aes(y = null.upper), lty = ci_lty) +
+      geom_line(aes(y = null.lower), lty = ci_lty) +
+      ylab("Moran's I") + xlab("distance") +
+      ggtitle(title, subttl) +
+      geom_hline(yintercept = 0, lty = 3)
+  )
+}
+
+```
+
+
+
+# Thrush Predictor Data
+```{r}
+
+
+
+```
+
+
+
+
+
+# Data import
+
+## Elevation data
+
+Northern Idaho, western Montana.
+```{r}
+# elev = raster(file.path(book_data, "elev.gri"))
+# elev = raster(file.path(book_data, "elev.grd"))
+elev = raster(file.path(book_data, "elev"))
+```
+
+
+Compute slope and aspect using `raster` package.
+
+<div class = "red"> NOTE: The second line of code in the example provided in the text fails:
+
+```{r, error = TRUE}
+elev.terr <- terrain( elev, opt = c(" slope", "aspect"), unit = "radians")
+```
+
+They neglect to mention that the raster they provide does not include projection information:
+```{r}
+proj4string(elev)=CRS(" +proj=aea +lat_1=46 +lat_2=48 +lat_0=44 +lon_0=-109.5 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+```
+</div>
+
+
+Build terrain layers using `terrain()` in the `raster` package
+
+Note: the book code specifies the unit as radians, the supplemental material code does not:
+```{r}
+# Supplemental code version
+# elev.terr <- terrain(elev, opt = c("slope", "aspect"))
+
+# Book version
+elev.terr <- terrain(elev, opt = c("slope", "aspect"), unit = "radians")
+```
+
+Create a raster stack to hold all the layers:
+```{r}
+layers <- stack(elev, elev.terr)
+layers <- brick(elev, elev.terr)
+names(layers) <- c("elev", "slope", "aspect")
+class(layers)
+```
+
+
+You can use `subset()` to select a particular layer i n a `RasterStack` or `RasterBrick` object.
+```{r}
+par(mfrow = c(1, 3))
+plot(subset(layers, 1))
+plot(subset(layers, 2))
+plot(subset(layers, 3))
+```
+
+
+
+## Varied Thrush Data
+
+Import and plot:
+```{r}
+#Point data with presence/absence
+point.data <- read.csv(file.path(book_data, "vath_2004.csv"), header = TRUE)
+
+dev.off()
+plot(subset(layers, 1))
+
+#plots the presence points
+points(point.data[point.data$VATH == 0, c("EASTING", "NORTHING")], col = "black", pch = 21, cex = 0.8)
+
+#plots the absence points
+points(point.data[point.data$VATH == 1, c("EASTING", "NORTHING")], col = "red", pch = 16, cex = 0.7)
+```
+
+Extract data data at sampling points
+```{r}
+
+
+
+coords <- cbind(point.data$EASTING, point.data$NORTHING)
+land.cov <- extract(x = layers, y = coords)
+point.data <- cbind(point.data, land.cov)
+```
+
+
+# Aspatial logistic regression
+
+## Data set-up
+
+### Check for collinearity (correlations among predictors)
+```{r}
+
+psych::pairs.padata.frame(thrush_sf)
+
+
+cor(point.data[, c("elev", "slope", "aspect")], method = "pearson")
+# pairs(point.data[, c("elev", "slope", "aspect")])
+# the psych package implementatin looks much nicer
+psych::pairs.panels(point.data[, c("elev", "slope", "aspect")])
+```
+
+
+### Center and scale predictors for modeling
+```{r}
+point.data$elevs <- scale(point.data$elev, center = T, scale = T)
+point.data$slopes <- scale(point.data$slope, center = T, scale = T)
+point.data$aspects <- scale(point.data$aspect, center = T, scale = T)
+```
+
+
+
+## Model 1: elevation 
+```{r}
+VATH.elev <- glm(
+  VATH ~ elev, 
+  family = "binomial", 
+  data = point.data)
+summary(VATH.elev)
+```
+
+
+
+## Model 2: additive - all factors
+```{r}
+VATH.all <- glm(
+  VATH ~ elevs + slopes + aspects, 
+  family = "binomial", 
+  data = point.data)
+summary(VATH.all)
+```
+
+
+
+
+## Model 3: polynomial elevation
+```{r}
+VATH.elev2 <- glm(
+  VATH ~ elev + I(elev^2), 
+  family = "binomial", 
+  data = point.data)
+summary(VATH.elev2)
+```
+
+
+
+
+## Model Selection
+
+The polynomial elevation model has lowest AIC
+```{r}
+AIC(VATH.elev, VATH.all, VATH.elev2)
+```
+
+
+Extract coefficients and their SEs from the best model
+```{r}
+summary(VATH.elev2)$coef
+glm.summary <- c(
+  summary(VATH.elev2)$coef[2, 1], 
+  summary(VATH.elev2)$coef[2, 2], 
+  summary(VATH.elev2)$coef[3, 1], 
+  summary(VATH.elev2)$coef[3, 2])
+#inspect
+glm.summary
+```
+<br><br>
+
+
+# Plot (aspatial) model
+
+## Use model to plot predicted Pr(abundance)
+
+First create a new (aspatial) data set to use with `predict()`
+```{r}
+Elev <-  seq(
+  min(point.data$elev), 
+  max(point.data$elev), 
+  length = 15)
+newdata <- data.frame(elev = Elev)
+```
+
+Use model to predict values for different elevations:
+```{r}
+# type = response for predicted probabilities
+glm.pred <- predict(
+  VATH.elev2, 
+  newdata = newdata, 
+  type =  "link", 
+  se = T) 
+```
+
+Logistic regression fits are given in quantiles of the **logistic distribution**, but these numbers aren't very intuitive to interpret.  We can back-transform them onto a probability scale:
+```{r}
+glm.newdata <-
+  data.frame(
+    newdata, 
+    pred = plogis(glm.pred$fit), 
+    lcl = plogis(glm.pred$fit + 1.96*glm.pred$se.fit), 
+    ucl = plogis(glm.pred$fit - 1.96*glm.pred$se.fit))
+```
+
+## Plot model coeff. with confidence intervals
+```{r}
+with(
+  glm.newdata,
+  matplot(
+    x = elev, y = cbind(pred, lcl, ucl), 
+    type = "l", col = 1, lty = c(1, 2, 2),
+    xlab = "elevation", ylab = "coeff"),
+  ylim = c(0, 0.3)
+)
+```
+
+
+## Map of model predictions
+
+The `raster` package includes an implementation of `predict` that we can use to create a raster layer of model predictions:
+```{r}
+glm.raster <- predict(
+  model = VATH.elev2,
+  object = layers,
+  type = "response")
+plot(glm.raster, xlab = "Longitude", ylab = "Latitude")
+```
+
+
+
+# Spatial dependence of model output
+
+
+## Correlogram of response
+
+Create a correlogram using the authors' function:
+```{r}
+VATH.cor <- icorrelogram(
+  locations = coords, 
+  z = point.data$VATH, 
+  binsize = 1000, 
+  maxdist = 15000)
+VATH.cor
+```
+
+
+<div class = "red">NOTE: the authors had an error in the `lines()` call below.  They misspecified the upper and lower null envelope column names in the original.</div>
+
+```{r}
+round(head(VATH.cor, 3), 2)
+plot_ff_correlogram(VATH.cor, "Correlogram of Response", "elevation-polynomial model")
+```
+
+
+## Correlogram of model residuals
+
+Build a correlogram with the authors' function:
+```{r}
+VATH.elev2.res <- residuals(VATH.elev2, type = "deviance")
+corr.res <- icorrelogram(
+  locations = coords, 
+  z = VATH.elev2.res, 
+  binsize = 1000, 
+  maxdist = 15000)
+```
+
+<div class = "red"> NOTE: same comment as above about error in column names.</div>
+```{r}
+
+plot_ff_correlogram(corr.res, "Correlogram of Residuals", "elevation-polynomial model")
+```
+
+
+
+contrast results from raw to residuals with mean
+correlogram on residuals of mean model (intercept model)
+```{r}
+VATH.int <- glm(VATH ~ 1, family = "binomial", data = point.data)
+VATH.int.res <- residuals(VATH.int, type = "deviance")
+corr.int.res <- icorrelogram(locations = coords, z = VATH.int.res, binsize = 1000, maxdist = 15000)
+
+plot_ff_correlogram(corr.int.res, "Correlogram of Residuals", "intercept-only model")
+```
+
+correlation
+```{r}
+cor(VATH.cor$Morans.i, corr.int.res$Morans.i)
+```
+
+
+# Subset data to account for autocorrelation ----
+```{r}
+#randomly shuffle data by transect and create a shuffled rank vector
+rand.vector <- with(
+  point.data, 
+  ave(
+    POINT, 
+    as.factor(TRANSECT), 
+    FUN = function(x) {sample(length(x))}))
+
+#pick one random point on transect and remove rest
+point.datasub <- point.data[rand.vector  <=  1, ]
+head(point.datasub, 3)
+
+```
+
+coordinates subset
+
+```{r}
+coords.sub <- cbind(point.datasub$NORTHING, point.datasub$NORTHING)
+head(coords.sub, 3)
+#model
+VATH.sub <- glm(VATH~elev + I(elev^2), family = "binomial", data = point.datasub)
+summary(VATH.sub)
+```
+
+extract coefficients
+```{r}
+glmsub.summary <- 
+  c(
+    summary(VATH.sub)$coef[2, 1], 
+    summary(VATH.sub)$coef[2, 2], 
+    summary(VATH.sub)$coef[3, 1], 
+    summary(VATH.sub)$coef[3, 2])
+```
+
+residuals
+#correlogram on residuals
+```{r}
+VATH.sub.res <- residuals(VATH.sub, type = "deviance")
+corr.sub.res <- icorrelogram(locations = coords.sub, z = VATH.sub.res, binsize = 2000, maxdist = 15000)
+plot_ff_correlogram(corr.sub.res, "Correlogram of Residuals", "spaced-sample model")
+```

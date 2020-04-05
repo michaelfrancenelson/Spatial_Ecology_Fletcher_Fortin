@@ -4,16 +4,16 @@ This is a walkthroug of a spatial analysis workflow, based of section **6.3.3: M
 
 > Fletcher, Robert; Fortin, Marie-Josée. Spatial Ecology and Conservation Modeling
 
-I use data and modelling ideas from their text, with additional explanations and 
+I use data and modelling ideas from their text, with additional explanations and
 
-- I'm going to use the **Simple Features** ecosystem of R spatial tools in this walkthrough.
-- I'm going to use the `ggplot` plotting methods, for the most part.
-- I'm going to use pipe operator `%>%` when appropriate:
+- This walkthrough uses the **Simple Features** ecosystem of R spatial tools in this walkthrough.
+- This walkthrough uses the `ggplot` plotting methods, for the most part.
+- This walkthrough uses pipe operator `%>%` when appropriate:
     - I like to keep the envirnoment free of intermediate variables.
-    - Pipes aren't always the best option, but sometimes they make code much more compact and elegant.
-    - pipes info at <a href="https://cfss.uchicago.edu/notes/pipes/">University of Chicago</a>
-    
-    
+    - Pipes aren't always the best option, but they can make compace and elegant code.
+    - Here is some info on from the <a href="https://cfss.uchicago.edu/notes/pipes/">University of Chicago</a>
+
+
 
 ## The data
 
@@ -43,4 +43,3 @@ I'll attempt to point out where I found issues and offer my corrections.
 There is a mistake in the definition of the `moran.results` data frame:
 
 They define two columns called `null.lower`, however one of them should have been `null.upper`
-    

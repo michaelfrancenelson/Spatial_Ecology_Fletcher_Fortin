@@ -5,13 +5,13 @@ Let's try three aspatial **logistic regression models**:
 We'll use three different sets of predictors.
 
 ## Elevation
-```{r model 1 center, class.source='klippy'}
+```{r model_1_center, class.source='klippy'}
 ```
 
 ## Elevation, slope, aspect
 
-```{r model 2 center, class.source='klippy'}
+```{r model_2_center, class.source='klippy'}
 ```
 ## Quadratic elevation
-```{r model 3 center, class.source='klippy'}
+```{r model_3_center, class.source='klippy'}
 ```

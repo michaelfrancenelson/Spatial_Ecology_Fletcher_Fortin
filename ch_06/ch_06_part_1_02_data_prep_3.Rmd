@@ -1,0 +1,29 @@
+
+# Custom Functions {.tabset}
+
+Functions for creating and plotting correlograms
+
+## Correlogram functions
+
+This is my version of the authors' function for calculating a correlogram.
+
+<div class="warn">
+Note that there is a mistake in the definition of the `moran.results` data frame.
+
+They define two columns called `null.lower`, however one of them should have been `null.upper`
+</div>
+
+<div class="fold s">
+```{r correlogram_function, results = 'hide', warning = FALSE}
+```
+</div>
+
+
+
+
+## Plot correlogram
+There's also a convenience function for plotting the resulting correlogram.
+<div class="fold s">
+```{r plotting_function, results = 'hide', warning = FALSE}
+```
+</div>
