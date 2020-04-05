@@ -17,6 +17,12 @@ knitr::read_chunk("ch_06_code.R")
 ```
 
 
+# Spatial Dependence
+We'll check for spatial dependence in our data using Correlograms (plots of distance vs. Moran's I)
+
+
+
+
 
 
 # Aspatial model building {.tabset}
@@ -78,18 +84,3 @@ We'll only plot the predicted vs. residuals plot here.  Since this model has mut
 ```
 </div>
 
-
-
-# Model Selection
-
-We'll use a very simple model selection process: the Akaike Information Criterion (AIC).
-
-The AIC attempts to balance model complexity with model fit.  A low AIC value indicates a 'better' model.
-
-```{r model_selection}
-
-```
-
-The quadratic elevation model seems to be the best because its AIC is the lowest, by around 17.
-
-<div class="warn"> NOTE: AIC and model selection are complex topics, this is a very simplified selection procedure.  In real life you would perform a more thoughtful and thorough model selection procedure. </div>

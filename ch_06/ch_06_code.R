@@ -1,3 +1,4 @@
+source(here::here("/data/environment_vars.R"))
 
 # ---- packages ----
 {
@@ -22,8 +23,6 @@
   
   # for Moran's I function
   require(spdep)
-  
-  source(here("/data/environment_vars.R"))
   
   # CRS for the raster and point data
   crs_dat = "+proj=aea +lat_1=46 +lat_2=48 +lat_0=44 +lon_0=-109.5 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
@@ -80,6 +79,7 @@
   
   thrush_sf = cbind(thrush_sf, extract(dat_brick, thrush_dt[, .(x = EASTING, y = NORTHING)]))
 }
+
 
 
 
@@ -165,6 +165,9 @@
   }
 }
 
+
+
+
 ## ---- plotting_params ----
 {
   # Thrush data histogram params
@@ -186,11 +189,11 @@
     geom_histogram(bins = 18, color = hist_col, fill = hist_fill_2, alpha = hist_alpha)
   
   # Map color and legend params
-  legend_width = 0.6
+  legend_width = 0.4
   
   map_cb =
     guide_colorbar(
-      title.position = "top",
+      title.position = "left",
       barwidth = unit(legend_width, "npc"))
   
   gg_thrush_start = 0.1
@@ -240,6 +243,8 @@
 }
 
 
+
+
 ## ---- covariate_pair_plot ----
 {
   pairs.panels(
@@ -249,19 +254,23 @@
 
 
 
+
 ## ---- census_histograms ----
 {
   require(grid)
   require(ggplotify)
   require(ggplot2)
   
-  pplot = as.ggplot(~pairs.panels(
-    data.frame(thrush_sf)[, 
-                          c("elevation", "slope", "aspect")]))
+  pplot = as.ggplot(
+    ~pairs.panels(
+      data.frame(thrush_sf)[, c("elevation", "slope", "aspect")]))
   
   g_hist_census = 
     ggplot(
-      aggregate(VATH ~ TRANSECT, data = thrush_sf, sum), aes(x = VATH)) + 
+      aggregate(
+        VATH ~ TRANSECT, 
+        data = thrush_sf, sum),
+      aes(x = VATH)) + 
     gm_hist_1 +
     labs(
       title = "Varied Thrush Census", 
@@ -270,7 +279,10 @@
   
   g_hist_census_points = 
     ggplot(
-      aggregate(VATH ~ TRANSECT*POINT, data = thrush_sf, sum), aes(x = VATH)) + 
+      aggregate(
+        VATH ~ TRANSECT * POINT, 
+        data = thrush_sf, sum), 
+      aes(x = VATH)) + 
     gm_hist_1 +
     labs(
       title = "Varied Thrush Census", 
@@ -281,6 +293,7 @@
 ## ---- terrain_histograms ----
 {
   gm_hist_thrush = ggplot(thrush_sf) + gm_thrush_hist_2
+  
   g_hist_elev = 
     gm_hist_thrush + aes(x = elevation) +
     ggtitle("Sample Point Terrain: Elevation") + 
@@ -302,115 +315,59 @@
     g_hist_aspect, ncol = 1)
   
   # Conditional histograms
-  gm_hist_thrush_present = ggplot(subset(thrush_sf, VATH == 1)) + gm_thrush_hist_3
-  gm_hist_thrush_absent = ggplot(subset(thrush_sf, VATH == 0)) + gm_thrush_hist_3
+  gm_hist_thrush_present = 
+    ggplot(subset(thrush_sf, VATH == 1)) +
+    gm_thrush_hist_3
+  gm_hist_thrush_absent = 
+    ggplot(subset(thrush_sf, VATH == 0)) +
+    gm_thrush_hist_3
   
   g_hist_elev_present = 
     gm_hist_thrush_present + aes(x = elevation) +
-    ggtitle("Sample Point Elevation", subtitle = "Thrushes Present") + 
+    labs(
+      title ="Sample Point Elevation",
+      subtitle = "Thrushes Present") + 
     xlab("Elevation (m)")
   
   g_hist_elev_absent = 
     gm_hist_thrush_absent + aes(x = elevation) +
-    ggtitle("Sample Point Elevation", subtitle = "Thrushes Absent") + 
+    labs(
+      title = "Sample Point Elevation", 
+      subtitle = "Thrushes Absent") + 
     xlab("Elevation (m)")
   
   g_hist_elev_cond = plot_grid(
     g_hist_elev_present, g_hist_elev_absent, nrow = 1)
-
   
-  }
-
-
-
-## ---- terrain_maps ----
-{
-  # original raster set for hi-resolution maps
-  dat_br = terrain_brick
-
-  # reduced-resolution raster set to speed up plotting
-  dat_br = terrain_brick_rs
   
-  # Select which color ramps to use for the maps
-  cols = gg_map_grayscale
-  cols = gg_map_terr
-  
-  map_elev = gg_map + geom_stars(data = dat_br[, , , 1]) + labs(fill = "Elevation") + cols
-  map_slope = gg_map + geom_stars(data = dat_br[, , , 2]) + labs(fill = "Slope") + cols
-  map_aspect = gg_map + geom_stars(data = dat_br[, , , 3]) + labs(fill = "Aspect") + cols
-  map_terrain = plot_grid(map_elev, map_slope, map_aspect, nrow = 1)
 }
 
 
-
-## ---- census_maps ----
-{
-  bb_inset = st_bbox(
-    c(xmin = 170000,
-      xmax = 210000,
-      ymin = 500000,
-      ymax = 551000), 
-    crs = crs_dat)
-
-  # full resolution
-  dat_br = terrain_brick
-  
-  # To speed  up test plots
-  dat_br = terrain_brick_rs
-  
-  
-  st_crs(terrain_brick_rs) = crs_dat
-  
-  thrush_inset = st_crop(thrush_sf, bb_inset)
-  elev_inset = st_crop(terrain_brick[, , , 1], bb_inset)
-  
-  thrush_inset = st_crop(thrush_sf, bb_inset)
-  elev_inset = st_crop(terrain_brick[, , , 1], bb_inset)
-  
-  cols = gg_thrush_elevation
-  sc_census = scale_color_manual(values = c(2, 3))
-  
-  thrush_inset_poly = 
-    geom_sf(data = st_as_sfc(bb_inset),
-            fill = "transparent", col = rgb(0, 0.3, 0.001), size = 1.9)
-  
-  thrush_map = gg_map + geom_stars(data = dat_br[, , , 1]) +
-    geom_sf(aes(colour = present), data = thrush_sf, size = 3, show.legend = FALSE) +
-    labs(fill = "Elevation") + cols + sc_census 
-  
-  thrush_inset_map = gg_map + geom_stars(data = elev_inset, show.legend = FALSE) +
-    geom_sf(aes(colour = present), data = thrush_inset, size = 2, show.legend = "point") +
-    labs(fill = "Elevation") + cols + sc_census + theme(legend.title = element_blank())
-  
-  thrush_map_full = plot_grid(thrush_map + thrush_inset_poly, thrush_inset_map, nrow = 1)
-  
-  rm(cols, elev_ins)
-}
 
 
 ## ---- center_data ----
 {
-  thrush_sf$elevation_sc <- scale(thrush_sf$elevation, center = T, scale = T)
-  thrush_sf$slope_sc <- scale(thrush_sf$slope, center = T, scale = T)
-  thrush_sf$aspect_sc <- scale(thrush_sf$aspect, center = T, scale = T)
+  thrush_sf$elevation_sc = scale(thrush_sf$elevation, center = T, scale = T)
+  thrush_sf$slope_sc = scale(thrush_sf$slope, center = T, scale = T)
+  thrush_sf$aspect_sc = scale(thrush_sf$aspect, center = T, scale = T)
 }
 
 
 
-## ---- model_1_center ----
+## ---- model_1 ----
 {
   fit_elev = glm(
-    VATH ~ elevation_sc, 
+    VATH ~ elevation, 
     family = "binomial", 
     data = thrush_sf)
   summary(fit_elev)
 }
 
 
-## ---- model_2_center ----
+## ---- model_2 ----
 {
   fit_terrain = glm(
-    VATH ~ elevation_sc + slope_sc + aspect_sc, 
+    VATH ~ elevation + slope + aspect, 
     family = "binomial", 
     data = thrush_sf)
   summary(fit_terrain)
@@ -418,17 +375,217 @@
 
 
 
-## ---- model_3_center ----
+## ---- model_3 ----
 {
   fit_elev_poly =  glm(
-    VATH ~ elevation_sc + I(elevation_sc^2), 
+    VATH ~ elevation + I(elevation^2), 
     family = "binomial", 
     data = thrush_sf)
   summary(fit_elev_poly)
 }
 
+## ---- model_1_center ----
+{
+  fit_elev_sc = glm(
+    VATH ~ elevation_sc, 
+    family = "binomial", 
+    data = thrush_sf)
+  summary(fit_elev_sc)
+}
 
 
+## ---- model_2_center ----
+{
+  fit_terrain_sc = glm(
+    VATH ~ elevation_sc + slope_sc + aspect_sc, 
+    family = "binomial", 
+    data = thrush_sf)
+  summary(fit_terrain_sc)
+}
+
+
+
+## ---- model_3_center ----
+{
+  fit_elev_poly_sc =  glm(
+    VATH ~ elevation_sc + I(elevation_sc^2), 
+    family = "binomial", 
+    data = thrush_sf)
+  summary(fit_elev_poly_sc)
+}
+
+
+
+
+## ---- model_diagnostics_1 ----
+{
+  plot(fit_elev)
+  
+  fit_elev$predicted = predict(fit_elev, type="response")
+  fit_elev$residuals = residuals(fit_elev, type = "response")
+
+  d$predicted <- predict(fit, type="response")
+  d$residuals <- residuals(fit, type = "response")
+
+  
+  d$predicted <- predict(fit, type="response")
+  d$residuals <- residuals(fit, type = "response")
+  
+  # Steps 3 and 4: plot the results
+  ggplot(d, aes(x = hp, y = vs)) +
+    geom_segment(aes(xend = hp, yend = predicted), alpha = .2) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue", mid = "white", high = "red") +
+    guides(color = FALSE) +
+    geom_point(aes(y = predicted), shape = 1) +
+    theme_bw()
+  
+  
+  # Steps 3 and 4: plot the results
+  ggplot(d, aes(x = hp, y = vs)) +
+    geom_segment(aes(xend = hp, yend = predicted), alpha = .2) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue", mid = "white", high = "red") +
+    guides(color = FALSE) +
+    geom_point(aes(y = predicted), shape = 1) +
+    theme_bw()  
+  # Steps 3 and 4: plot the results
+  ggplot(d, aes(x = hp, y = vs)) +
+    geom_segment(aes(xend = hp, yend = predicted), alpha = .2) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue", mid = "white", high = "red") +
+    guides(color = FALSE) +
+    geom_point(aes(y = predicted), shape = 1) +
+    theme_bw()
+  
+  thrush_sf$predicted = predict(fit_elev, type="response")
+  thrush_sf$residuals = residuals(fit_elev, type = "response")
+  
+    # Steps 3 and 4: plot the results
+  ggplot(thrush_sf, aes(x = elevation_sc, y = VATH)) +
+    geom_segment(aes(xend = elevation_sc, yend = predicted), alpha = .2) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue", mid = "white", high = "red") +
+    guides(color = FALSE) +
+    geom_point(aes(y = predicted), shape = 1) +
+    theme_bw()
+  
+    fit_elev$predicted
+  
+}
+
+## ---- model_1_diagnostics ----
+{
+  dat_fit_1 = data.frame(thrush_sf)
+  dat_fit_1$predicted = predict(fit_elev_sc, type="response")
+  dat_fit_1$residuals = residuals(fit_elev_sc, type="response")
+   
+  # plot residuals against elevation (the predictor)
+  plot(residuals ~ elevation, data = dat_fit_1) 
+  
+  # Plot residuals against the predicted values
+  plot(residuals ~ predicted, data = dat_fit_1) 
+}
+
+
+## ---- model_3_diagnostics ----
+{
+  dat_fit_3 = data.frame(thrush_sf)
+  dat_fit_3$predicted = predict(fit_elev_poly_sc, type="response")
+  dat_fit_3$residuals = residuals(fit_elev_poly_sc, type="response")  
+  # plot residuals against elevation (the predictor)
+  
+  plot(residuals ~ elevation, data = dat_fit_3) 
+  
+  # Plot residuals against the predicted values
+  plot(residuals ~ predicted, data = dat_fit_3, pch = 16, cex = 0.1)
+} 
+
+## ---- model_1_diagnostics_fancy ----
+if (FALSE)
+  {
+  
+  with(subset(dat_fit_1, VATH == 0), lines(lowess(elevation, residuals)))
+  with(subset(dat_fit_1, VATH == 1), lines(lowess(elevation, residuals)))
+  with(dat_fit_1, lines(lowess(elevation, residuals)))
+  
+  plot(residuals ~ predicted, data = dat_fit_1, type = ) 
+  # with(subset(dat_fit_1, VATH == 0), lines(lowess(predicted, residuals)))
+  # with(subset(dat_fit_1, VATH == 1), lines(lowess(predicted, residuals)))
+  with(dat_fit_1, lines(lowess(predicted, residuals)))
+  
+  
+  plot(predicted ~ elevation, data = dat_fit_1) 
+  ggplot(dat_fit_1, aes(x = elevation, y = residuals)) +
+    # geom_segment(aes(xend = elevation, yend = predicted), alpha = .2) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue", mid = "white", high = "red") +
+    guides(color = FALSE) +
+    geom_point(aes(y = predicted), shape = 1) +
+    theme_bw()
+  
+  
+  
+  # Steps 3 and 4: plot the results
+  ggplot(dat_fit_1, aes(x = predicted, y = residuals)) +
+    # geom_segment(aes(xend = predicted, yend = predicted), alpha = .2) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue", mid = "white", high = "red") +
+    guides(color = FALSE) +
+    # geom_point(aes(y = predicted), shape = 1) +
+    theme_bw()
+  
+  
+}
+
+
+ 
+## ---- model_3_diagnostics_fancy ----
+if (FALSE)
+  {
+
+  
+  ggplot(dat_fit_1, aes(x = elevation, y = VATH)) +
+    geom_segment(aes(xend = elevation, yend = predicted), alpha = .2) +
+    geom_point(aes(color = residuals)) +
+    scale_color_gradient2(low = "blue", mid = "white", high = "red") +
+    guides(color = FALSE) +
+    geom_point(aes(y = predicted), shape = 1) +
+    theme_bw()
+  plot(residuals ~ predicted, data = dat_fit_3)   
+}
+
+
+
+# ---- model_selection ----
+{
+  AIC(fit_elev_sc, fit_terrain_sc, fit_elev_poly_sc)
+}
+
+
+
+
+# ---- model_plots ----
+{
+  newdata = data.frame(
+    elevation_sc =   
+      seq(
+        min(thrush_sf$elevation_sc), 
+        max(thrush_sf$elevation_sc), 
+        length = 25))
+  
+  
+  
+  # Use model to predict values for different elevations:
+  # type = response for predicted probabilities
+  glm.pred = predict(
+    fit_elev_sc, 
+    newdata = newdata, 
+    type =  "link", 
+    se = T) 
+  
+  
+}
 ## ---- image_file_parameters ----
 {
   # dimensions for output files
@@ -442,7 +599,8 @@
   save_th = function(filename, grob, height = 1, width = 1)
   {
     pdf(file.path(fig_dir, filename), 
-        width = width * fig_panel_width, height = height * fig_panel_height_1)
+        width = width * fig_panel_width, 
+        height = height * fig_panel_height_1)
     print(grob)
     dev.off()
     
@@ -457,6 +615,112 @@
     print(grob)
     dev.off()
   }
+  
+}
+
+
+
+
+## ---- terrain_maps ----
+{
+  # original raster set for hi-resolution maps
+  dat_br = terrain_brick
+  
+  # reduced-resolution raster set to speed up plotting
+  dat_br = terrain_brick_rs
+  
+  # Select which color ramps to use for the maps
+  cols = gg_map_grayscale
+  cols = gg_map_terr
+  
+  map_elev = 
+    gg_map +
+    geom_stars(data = dat_br[, , , 1]) + 
+    labs(fill = "Elevation") + cols
+  
+  map_slope = 
+    gg_map +
+    geom_stars(data = dat_br[, , , 2]) + 
+    labs(fill = "Slope") + cols
+  
+  map_aspect = 
+    gg_map + 
+    geom_stars(data = dat_br[, , , 3]) + 
+    labs(fill = "Aspect") + cols
+  
+  map_terrain =
+    plot_grid(
+      map_elev,
+      map_slope, 
+      map_aspect,
+      nrow = 1)
+}
+
+
+
+## ---- census_maps ----
+{
+  bb_inset = st_bbox(
+    c(xmin = 170000,
+      xmax = 210000,
+      ymin = 500000,
+      ymax = 551000), 
+    crs = crs_dat)
+  
+  # full resolution
+  dat_br = terrain_brick
+  
+  # To speed  up test plots
+  dat_br = terrain_brick_rs
+  
+  st_crs(terrain_brick_rs) = crs_dat
+  
+  thrush_inset = st_crop(thrush_sf, bb_inset)
+  elev_inset = st_crop(terrain_brick[, , , 1], bb_inset)
+  
+  thrush_inset = st_crop(thrush_sf, bb_inset)
+  elev_inset = st_crop(terrain_brick[, , , 1], bb_inset)
+  
+  cols = gg_thrush_elevation
+  sc_census = scale_color_manual(name = "Varied Thrush", values = c(2, 3))
+  
+  thrush_inset_poly = 
+    geom_sf(data = st_as_sfc(bb_inset),
+            fill = "transparent",
+            col = rgb(0, 0.3, 0.001), size = 1.9)
+  
+  thrush_map = 
+    gg_map + 
+    geom_stars(data = dat_br[, , , 1]) +
+    geom_sf(
+      aes(colour = present),
+      data = thrush_sf,
+      size = 3, show.legend = FALSE) +
+    labs(
+      title = "Sampling Locations",
+      subtitle = "Transects",
+      fill = "Elevation") + cols + sc_census
+  
+  thrush_inset_map = 
+    gg_map + 
+    geom_stars(data = elev_inset, show.legend = FALSE) +
+    geom_sf(
+      aes(colour = present),
+      data = thrush_inset, 
+      size = 2, 
+      show.legend = "point") +
+    labs(
+      title = "Sampling Locations", 
+      subtitle = "Census Sites",
+      fill = "Elevation") + 
+    cols + sc_census +
+    guides(
+      colour = guide_legend(title.position="top", title.hjust = 0.5))
+  # theme(legend.title = element_blank())
+  
+  thrush_map_full = plot_grid(
+    thrush_map + thrush_inset_poly, 
+    thrush_inset_map, nrow = 1)
   
 }
 

@@ -18,8 +18,9 @@ output:
 require(kilppy)
 require(here)
 
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+source(here("/data/environment_vars.R"))
 
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
 knitr::read_chunk("ch_06_code.R")
 
@@ -27,8 +28,8 @@ knitr::read_chunk("ch_06_code.R")
 
 
 
-<!-- ```{r child = 'ch_06_part_1_01_intro.Rmd'} -->
-<!-- ``` -->
+```{r child = 'ch_06_part_1_01_intro.Rmd'}
+```
 
 
 ```{r child = 'ch_06_part_1_02_data_prep_1.Rmd', cache=FALSE}
@@ -45,6 +46,10 @@ knitr::read_chunk("ch_06_code.R")
 
 ```{r child = 'ch_06_part_1_03_data_exploration.Rmd'}
 ```
+
+```{r child = 'ch_06_part_1_03_data_exploration_2_maps.Rmd'}
+```
+
 
 ```{r child = 'ch_06_part_1_04_models_1.Rmd'}
 ```

@@ -1,0 +1,29 @@
+```{r, include = FALSE}
+source(here::here("/data/environment_vars.R"))
+```
+
+# Maps {.tabset}
+
+
+## Study Site
+
+Physical characteristics of the study area:
+
+<div class="fold s">
+```{r terrain_maps}
+```
+</div>
+
+![](`r file.path(fig_dir, "varied_thrush_map_terrain.png")`)  
+
+
+## Sampling Locations
+
+Transects and selected census sites within transects (2nd panel).
+
+<div class="fold s">
+```{r census_maps, eval = FALSE}
+```
+</div>
+
+![](`r file.path(fig_dir, "varied_thrush_map_and_inset.png")`)  
