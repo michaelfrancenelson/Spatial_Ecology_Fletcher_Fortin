@@ -22,7 +22,10 @@ source(here("/data/environment_vars.R"))
 
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
-knitr::read_chunk("ch_06_code.R")
+# knitr::read_chunk("ch_06_code.R")
+knitr::read_chunk("ch_06_code_1_setup.R")
+knitr::read_chunk("ch_06_code_2_figures.R")
+knitr::read_chunk("ch_06_code_3_models.R")
 
 ```
 

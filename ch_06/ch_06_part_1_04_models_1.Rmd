@@ -1,24 +1,3 @@
-```{r, include = FALSE}
-source(here::here("/data/environment_vars.R"))
-knitr::read_chunk("ch_06_code.R")
-```
-
-
-```{r packages, results = "hide", warning = FALSE, include=FALSE}
-```
-
-```{r elevation_data, cache=FALSE, include = FALSE}
-```
-
-```{r varied_thrush_data, cache=FALSE, include = FALSE}
-```
-
-```{r center_data, cache=FALSE, include = FALSE}
-```
-
-
-
-
 # Aspatial model building {.tabset}
 
 Let's try three aspatial **logistic regression models**:
@@ -26,7 +5,7 @@ Let's try three aspatial **logistic regression models**:
 We'll use three different sets of predictors.
 
 ## Elevation
-<div class="fold s o">
+<div class="fold o">
 ```{r model_1_center, class.source='klippy'}
 ```
 </div>
@@ -34,7 +13,7 @@ We'll use three different sets of predictors.
 
 
 ## Elevation, slope, aspect
-<div class="fold s o">
+<div class="fold o">
 ```{r model_2_center, class.source='klippy'}
 ```
 </div>
@@ -43,13 +22,15 @@ We'll use three different sets of predictors.
 
 
 ## Quadratic elevation
-<div class="fold s o">
+<div class="fold o">
 ```{r model_3_center, class.source='klippy'}
 ```
 </div>
 
 
-# Aspatial Model Diagnostics
+
+
+# Aspatial Model Diagnostics {.tabset}
 
 In this example, I'm including only some **very** basice model diagnostics: residual plots.  I'm also going to proceed as if the diagnostics were totally fine.  In a real analysis, you'd want to perform a more thorough set of model diagnostics.
 
@@ -87,7 +68,6 @@ We'll use a very simple model selection process: the Akaike Information Criterio
 The AIC attempts to balance model complexity with model fit.  A low AIC value indicates a 'better' model.
 
 ```{r model_selection}
-
 ```
 
 The quadratic elevation model seems to be the best because its AIC is the lowest, by around 17.

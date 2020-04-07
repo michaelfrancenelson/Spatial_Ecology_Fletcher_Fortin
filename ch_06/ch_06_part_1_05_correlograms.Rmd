@@ -16,11 +16,24 @@ knitr::read_chunk("ch_06_code.R")
 ```{r center_data, cache=FALSE, include = FALSE}
 ```
 
+```{r center_data, cache=FALSE, include = FALSE}
+```
+
 
 # Spatial Dependence
 We'll check for spatial dependence in our data using Correlograms (plots of distance vs. Moran's I)
 
+```{r correlogram_response, cache=FALSE, include = FALSE}
+```
+```{r correlogram_quadratic, cache=FALSE, include = FALSE}
+```
 
+```{r}
+gg_correlogram_elev
+```
+```{r}
+gg_correlogram_resid_1
+```
 
 
 
