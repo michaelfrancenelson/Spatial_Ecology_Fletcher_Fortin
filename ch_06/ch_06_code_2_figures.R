@@ -205,18 +205,6 @@
 }
 
 
-# ---- correlogram_plots ----
-{
-  gg_correlogram_elev = plot_ff_correlogram(cgram_elev_1, "Correlogram of Response")
-  gg_correlogram_resid_1 = plot_ff_correlogram(cgram_resid_1, "Correlogram of Residuals", subttl = "Aspatial Model")
-  gg_correlogram_resid_spaced = plot_ff_correlogram(cgram_resid_spatial, "Correlogram of Residuals", subttl = "Spaced-Sample Model")
-  # gg_correlogram_elev  
-  # gg_correlogram_resid_1
-  # gg_correlogram_resid_spaced
-}
-
-
-
 ## ---- image_file_parameters ----
 {
   # dimensions for output files

@@ -257,6 +257,12 @@
       family = "binomial", 
       data = dat_2
     )
+  
+  cgram_resid_spatial =
+    ff_correlogram(
+      st_coordinates(dat_2),
+      residuals(fit_spaced)
+    )
 }
 
 
@@ -276,17 +282,5 @@
     ff_correlogram(
       st_coordinates(thrush_sf),
       residuals(fit_elev_poly_sc)
-    )
-}
-
-
-
-# ---- correlogram_spaced ----
-{
-  
-  cgram_resid_spatial =
-    ff_correlogram(
-      st_coordinates(dat_2),
-      residuals(fit_spaced)
     )
 }

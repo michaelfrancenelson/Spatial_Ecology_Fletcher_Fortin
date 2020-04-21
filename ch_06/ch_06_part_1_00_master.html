@@ -2013,61 +2013,63 @@ Note: I use <code>here()</code> in conjunction with the file path to the F&amp;F
 </div>
 <div class="fold s">
 <pre class="r"><code>{
-  icorrelogram &lt;- function(locations, z, binsize, maxdist)
+  ff_correlogram = function(point_coords, point_data, max_dist = NULL, bin_size = NULL, alpha = 0.05)
   {
     # package &#39;spdep&#39; needed for dnearneigh() function.
     # Check whether it is installed:
     stopifnot(require(spdep))
+    stopifnot(require(raster))
     
-    distbin &lt;- seq(0, maxdist, by = binsize)
-    Nbin &lt;- length(distbin)-1
-    
-    moran.results &lt;- data.frame(
-      &quot;dist&quot; =  rep(NA, Nbin),
-      &quot;Morans.i&quot; = NA,
-      &quot;null.lower&quot; = NA,
-      &quot;null.upper&quot; = NA)
-    
-    for (i in 1:Nbin){
-      d.start &lt;- distbin[i]
-      d.end &lt;- distbin[i+1]
-      
-      neigh &lt;- spdep::dnearneigh(
-        x = locations,
-        d1 = d.start,
-        d.end,
-        longlat = F)
-      
-      wts &lt;- nb2listw(
-        neighbours = neigh,
-        style = &#39;B&#39;,
-        zero.policy = T)
-      
-      #note alternative is for P-value, so only &#39;signif icant if positive autocorrelation
-      mor.i &lt;- moran.mc(
-        x = z, listw = wts,
-        nsim = 200,
-        alternative = &quot;greater&quot;,
-        zero.policy = T)
-      
-      moran.results[i, &quot;dist&quot;] &lt;- (d.end+d.start)/2
-      
-      #observed moran&#39;s i
-      moran.results[i, &quot;Morans.i&quot;] &lt;- mor.i$statistic
-      
-      moran.results[i, &quot;null.lower&quot;] &lt;-
-        quantile(
-          mor.i$res,
-          probs = 0.025,
-          na.rm = T)#95% null envelope
-      
-      moran.results[i, &quot;null.upper&quot;] &lt;-
-        quantile(
-          mor.i$res,
-          probs = 0.975,
-          na.rm = T)#95% null envelope
+    if (is.null(max_dist))
+    {
+      # Euclidean distance betwen opposite corners of bounding box
+      ext_coords = unlist(raster::extent(SpatialPoints(point_coords)))[1:4]
+      max_dist = sqrt(diff(ext_coords[1:2])^2 + diff(ext_coords[3:4])^2) / 3
     }
-    return(moran.results)
+    
+    if (is.null(bin_size)) bin_size = max_dist / 20
+    
+    # Set up the distance bins
+    dist_bins = seq(0, max_dist, by = bin_size)
+    n_bins = length(dist_bins) - 1
+    
+    # container for results
+    moran_out = data.frame(
+      dist_class = rep(NA, n_bins),
+      model_I = NA, model_p = NA,
+      null_I_lower = NA, null_I_upper = NA)
+    
+    for (i in 1:n_bins)
+    {
+      d_lower = dist_bins[i]; d_upper = dist_bins[i+1]
+      dist_class = mean(d_lower, d_upper)
+      neigh = 
+        spdep::dnearneigh(x = point_coords, d1 = d_lower, d2 = d_upper, longlat = F)
+      wts = nb2listw(neighbours = neigh, style = &#39;B&#39;,  zero.policy = TRUE)
+      
+      #note alternative is for P-value, so only &#39;significant if positive autocorrelation
+      mor.i =
+        moran.mc(
+          x = point_data, listw = wts, nsim = 200, 
+          alternative = &quot;greater&quot;, zero.policy = T) 
+      
+      # null envelope   
+      null_env = quantile(mor.i$res, probs = c(alpha / 2, 1 - alpha / 2), na.rm = T)
+      moran_out[i, ] = c(dist_class, mor.i$statistic, mor.i$p.value, null_env)
+    }
+    return(moran_out)
+  }
+  
+  # Test case
+  if (FALSE)
+  {
+    point_coords = st_coordinates(thrush_sf)
+    point_data = thrush_sf$elevation
+    bin_size = 300
+    max_dist = 10000
+    corr_1 = ff_correlogram(point_coords, point_data)
+    head(corr_1)
+    with(corr_1, matplot(x = dist_class, y = cbind(model_I, null_I_lower, null_I_upper), type = &quot;l&quot;))
   }
 }</code></pre>
 </div>

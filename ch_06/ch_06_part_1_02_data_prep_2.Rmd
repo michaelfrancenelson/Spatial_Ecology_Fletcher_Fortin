@@ -51,3 +51,15 @@ Crate ggplot objects for building the plots later.
 ```{r census_maps, results = "hide", warning = FALSE}
 ```
 </div>
+
+
+
+
+## Correlogram Plots
+<div class="fold s">
+```{r correlogram_plots, results = "hide", warning = FALSE, eval=FALSE}
+```
+</div>
+
+
+
