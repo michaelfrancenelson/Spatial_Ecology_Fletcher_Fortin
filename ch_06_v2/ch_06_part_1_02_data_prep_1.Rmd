@@ -1,0 +1,86 @@
+
+# Data {.tabset}
+
+
+## Packges, environment
+
+Packages used in this walkthrough.
+
+<div class="warn"> Note:  I use `here()` in conjunction with the file path to the F&F data on my computer. You'll need to tell R where to look for the data on your machine. </div>
+
+
+<div class="fold s">
+```{r packages, results = "hide", warning = FALSE}
+```
+</div>
+
+
+
+## Elevation data
+
+Read in the elevation using `raster()`
+
+```{r elevation_data, results = "hide", warning = FALSE}
+```
+
+
+## Build terrain covariates
+
+You can use `terrain_brick()` from package `raster` to calculate slope and aspect.
+
+```{r build_terrain}
+```
+
+
+
+
+## Varied Thrush Data {.tabset}
+
+First read the data into a data frame, then make a spatial object:
+
+```{r read_thrush_data_frame}
+```
+
+
+### `sf` version
+
+- You can make a `sf` object from a `Spatial`, `data.frame`, or `data.table` object with `st_as_sf()`
+```{r read_thrush_data_frame, results = 'hide'}
+```
+```{r thrush_data_frame_to_sf }
+```
+
+
+
+### `SpatialPointsDataFrame` version
+- Raster works better with `Spatial` objects than `sf` objects, so I'll proceed with the SPDF version.
+
+```{r read_thrush_data_frame}
+```
+```{r thrush_spdf}
+```
+
+
+### Extract terrain
+
+- I have been unsuccessful at finding a quick way to extract values from a `stars` object given point coordinates.
+    - This code uses `extract()` on the `RasterBrick` version of the data to add terrain info to the thrush data.
+
+```{r extract_terrain_data}
+```
+
+- The rest of the code works better with an `sf` object:
+```{r convert_to_sf, results = "hide"}
+```
+
+
+
+### Center data
+
+The authors centered and scaled, i.e. a z-transfomation, for the modeling.  The resulting
+centered/scaled variables have mean 0 and variance 1.
+
+```{r center_data, results = 'hide', warning = FALSE}
+```
+
+

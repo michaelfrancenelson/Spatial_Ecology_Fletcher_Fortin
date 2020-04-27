@@ -1,0 +1,75 @@
+# Aspatial model building {.tabset}
+
+Let's try three aspatial **logistic regression models**:
+
+We'll use three different sets of predictors.
+
+## Elevation
+<div class="fold o">
+```{r model_1_center, class.source='klippy'}
+```
+</div>
+
+
+
+## Elevation, slope, aspect
+<div class="fold o">
+```{r model_2_center, class.source='klippy'}
+```
+</div>
+
+
+
+
+## Quadratic elevation
+<div class="fold o">
+```{r model_3_center, class.source='klippy'}
+```
+</div>
+
+
+
+
+# Aspatial Model Diagnostics {.tabset}
+
+In this example, I'm including only some **very** basice model diagnostics: residual plots.  I'm also going to proceed as if the diagnostics were totally fine.  In a real analysis, you'd want to perform a more thorough set of model diagnostics.
+
+
+Here's a very nice article about plotting residuals with ggplot: 
+<a href="https://drsimonj.svbtle.com/visualising-residuals">Visualising Residuals by Simon Jackson</a>
+
+The following are simple base R plots:
+
+## Elevation Model
+
+Elevation vs residuals and predicted vs. residuals plots for model 1: 
+
+<div class="fold s">
+```{r model_1_diagnostics}
+```
+</div>
+
+
+## Quadratic Elevation Model
+
+We'll only plot the predicted vs. residuals plot here.  Since this model has mutliple predictors plotting predictors vs. residuals is more complicated.
+
+<div class="fold s">
+```{r model_3_diagnostics}
+```
+</div>
+
+
+
+# Model Selection
+
+We'll use a very simple model selection process: the Akaike Information Criterion (AIC).
+
+The AIC attempts to balance model complexity with model fit.  A low AIC value indicates a 'better' model.
+
+```{r model_selection}
+```
+
+The quadratic elevation model seems to be the best because its AIC is the lowest, by around 17.
+
+<div class="warn"> NOTE: AIC and model selection are complex topics, this is a very simplified selection procedure.  In real life you would perform a more thoughtful and thorough model selection procedure. </div>

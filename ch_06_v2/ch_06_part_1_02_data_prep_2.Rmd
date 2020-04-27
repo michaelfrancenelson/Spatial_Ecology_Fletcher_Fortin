@@ -1,0 +1,72 @@
+
+# Graphical paramaters {.tabset}
+
+For simpler plotting coding later, I've created ggplot objects here.
+
+
+
+## Plot params
+
+Crate ggplot objects for building the plots later.
+
+<div class="fold s">
+```{r plotting_params, results = 'hide', warning = FALSE}
+```
+</div>
+
+
+
+## Pair plot
+```{r covariate_pair_plot, eval = FALSE, class.source='klippy', results = "hide", warning = FALSE}
+```
+
+
+
+## Census histograms
+
+<div class="fold s">
+```{r census_histograms, results = 'hide', warning = FALSE}
+```
+</div>
+
+
+
+
+## Terrain histograms
+<div class="fold s">
+```{r terrain_histograms, results = 'hide', warning = FALSE}
+```
+</div>
+
+
+
+## Stars object
+```{r terrain_stars}
+```
+
+
+## Terrain maps
+<div class="fold s">
+```{r terrain_maps, results = 'hide', warning = FALSE}
+```
+</div>
+
+
+
+## Census maps
+<div class="fold s">
+```{r census_maps, results = "hide", warning = FALSE}
+```
+</div>
+
+
+
+
+## Correlogram Plots
+<div class="fold s">
+```{r correlogram_plots, results = "hide", warning = FALSE, eval=FALSE}
+```
+</div>
+
+
+

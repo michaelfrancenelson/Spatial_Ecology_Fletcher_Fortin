@@ -22,10 +22,10 @@ source(here("/data/environment_vars.R"))
 
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
-knitr::read_chunk("ch_06_code_v2.R")
-knitr::read_chunk("ch_06_code_1_setup.R")
-knitr::read_chunk("ch_06_code_2_figures.R")
-knitr::read_chunk("ch_06_code_3_models.R")
+knitr::read_chunk("ch_06_01_data.R")
+knitr::read_chunk("ch_06_01_functions.R")
+knitr::read_chunk("ch_06_02_figures.R")
+knitr::read_chunk("ch_06_03_models.R")
 
 ```
 
@@ -60,8 +60,8 @@ knitr::read_chunk("ch_06_code_3_models.R")
 
 
 
-<!-- ```{r child = 'ch_06_part_1_05_correlograms.Rmd'} -->
-<!-- ``` -->
+```{r child = 'ch_06_part_1_05_correlograms.Rmd'}
+```
 
 
 

@@ -1,23 +1,6 @@
 ```{r, include = FALSE}
 source(here::here("/data/environment_vars.R"))
-knitr::read_chunk("ch_06_code.R")
-knitr::read_chunk("ch_06_code_v2.R")
-```
-
-
-```{r packages, results = "hide", warning = FALSE, include=FALSE}
-```
-
-```{r elevation_data, cache=FALSE, include = FALSE}
-```
-
-```{r varied_thrush_data, cache=FALSE, include = FALSE}
-```
-
-```{r center_data, cache=FALSE, include = FALSE}
-```
-
-```{r center_data, cache=FALSE, include = FALSE}
+knitr::read_chunk("ch_06_01_data.R")
 ```
 
 
@@ -43,6 +26,7 @@ gg_correlogram_elev
 ```{r, include = FALSE}
 gg_correlogram_resid_1
 ```
+
 
 
 
